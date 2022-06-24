@@ -1433,7 +1433,7 @@ class wpdb {
 			}
 		}
 
-		/*
+		/**
 		 * Specify the formatting allowed in a placeholder. The following are allowed:
 		 *
 		 * - Sign specifier. eg, $+d
@@ -1444,7 +1444,7 @@ class wpdb {
 		 */
 		$allowed_format = '(?:[1-9][0-9]*[$])?[-+0-9]*(?: |0|\'.)?[-+0-9]*(?:\.[0-9]+)?';
 
-		/*
+		/**
 		 * If a %s placeholder already has quotes around it, removing the existing quotes and re-inserting them
 		 * ensures the quotes are consistent.
 		 *
@@ -1476,7 +1476,7 @@ class wpdb {
 
 				return;
 			} else {
-				/*
+				/**
 				 * If we don't have the right number of placeholders, but they were passed as individual arguments,
 				 * or we were expecting multiple arguments in an array, throw a warning.
 				 */
@@ -1492,7 +1492,7 @@ class wpdb {
 					'4.8.3'
 				);
 
-				/*
+				/**
 				 * If we don't have enough arguments to match the placeholders,
 				 * return an empty string to avoid a fatal error on PHP 8.
 				 */
@@ -1712,7 +1712,7 @@ class wpdb {
 	public function db_connect( $allow_bail = true ) {
 		$this->is_mysql = true;
 
-		/*
+		/**
 		 * Deprecated in 3.9+ when using MySQLi. No equivalent
 		 * $new_link parameter exists for mysqli_* functions.
 		 */
@@ -1720,7 +1720,7 @@ class wpdb {
 		$client_flags = defined( 'MYSQL_CLIENT_FLAGS' ) ? MYSQL_CLIENT_FLAGS : 0;
 
 		if ( $this->use_mysqli ) {
-			/*
+			/**
 			 * Set the MySQLi error reporting off because WordPress handles its own.
 			 * This is due to the default value change from `MYSQLI_REPORT_OFF`
 			 * to `MYSQLI_REPORT_ERROR|MYSQLI_REPORT_STRICT` in PHP 8.1.
@@ -1739,7 +1739,7 @@ class wpdb {
 				list( $host, $port, $socket, $is_ipv6 ) = $host_data;
 			}
 
-			/*
+			/**
 			 * If using the `mysqlnd` library, the IPv6 address needs to be enclosed
 			 * in square brackets, whereas it doesn't while using the `libmysqlclient` library.
 			 * @see https://bugs.php.net/bug.php?id=67563
@@ -1758,7 +1758,7 @@ class wpdb {
 			if ( $this->dbh->connect_errno ) {
 				$this->dbh = null;
 
-				/*
+				/**
 				 * It's possible ext/mysqli is misconfigured. Fall back to ext/mysql if:
 				 *  - We haven't previously connected, and
 				 *  - WP_USE_EXT_MYSQL isn't set to false, and
@@ -2238,7 +2238,7 @@ class wpdb {
 			$placeholder = '{' . hash_hmac( $algo, uniqid( $salt, true ), $salt ) . '}';
 		}
 
-		/*
+		/**
 		 * Add the filter to remove the placeholder escaper. Uses priority 0, so that anything
 		 * else attached to this filter will receive the query with the placeholder string removed.
 		 */
@@ -2258,7 +2258,7 @@ class wpdb {
 	 * @return string The query with the placeholder escape string inserted where necessary.
 	 */
 	public function add_placeholder_escape( $query ) {
-		/*
+		/**
 		 * To prevent returning anything that even vaguely resembles a placeholder,
 		 * we clobber every % we can find.
 		 */
@@ -2646,7 +2646,7 @@ class wpdb {
 	protected function process_field_charsets( $data, $table ) {
 		foreach ( $data as $field => $value ) {
 			if ( '%d' === $value['format'] || '%f' === $value['format'] ) {
-				/*
+				/**
 				 * We can skip this field if we know it isn't a string.
 				 * This checks %d/%f versus ! %s because its sprintf() could take more.
 				 */
@@ -2677,7 +2677,7 @@ class wpdb {
 	protected function process_field_lengths( $data, $table ) {
 		foreach ( $data as $field => $value ) {
 			if ( '%d' === $value['format'] || '%f' === $value['format'] ) {
-				/*
+				/**
 				 * We can skip this field if we know it isn't a string.
 				 * This checks %d/%f versus ! %s because its sprintf() could take more.
 				 */
@@ -3495,7 +3495,7 @@ class wpdb {
 			return $maybe[2];
 		}
 
-		/*
+		/**
 		 * SHOW TABLE STATUS LIKE and SHOW TABLES LIKE 'wp\_123\_%'
 		 * This quoted LIKE operand seldom holds a full table name.
 		 * It is usually a pattern for matching a prefix so we just
@@ -3770,7 +3770,7 @@ class wpdb {
 					$client_version = mysql_get_client_info();
 				}
 
-				/*
+				/**
 				 * libmysql has supported utf8mb4 since 5.5.3, same as the MySQL server.
 				 * mysqlnd has supported utf8mb4 since 5.0.9.
 				 */
