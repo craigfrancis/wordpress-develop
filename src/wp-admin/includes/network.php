@@ -69,7 +69,7 @@ function allow_subdirectory_install() {
 		return true;
 	}
 
-	$post = $wpdb->get_row( "SELECT ID FROM $wpdb->posts WHERE post_date < DATE_SUB(NOW(), INTERVAL 1 MONTH) AND post_status = 'publish'" );
+	$post = $wpdb->get_row( $wpdb->prepare( 'SELECT ID FROM %i WHERE post_date < DATE_SUB(NOW(), INTERVAL 1 MONTH) AND post_status = "publish"', $wpdb->posts ) );
 	if ( empty( $post ) ) {
 		return true;
 	}

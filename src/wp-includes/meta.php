@@ -246,7 +246,7 @@ function update_metadata( $meta_type, $object_id, $meta_key, $meta_value, $prev_
 		}
 	}
 
-	$meta_ids = $wpdb->get_col( $wpdb->prepare( "SELECT $id_column FROM $table WHERE meta_key = %s AND $column = %d", $meta_key, $object_id ) );
+	$meta_ids = $wpdb->get_col( $wpdb->prepare( 'SELECT %i FROM %i WHERE meta_key = %s AND %i = %d', $id_column, $table, $meta_key, $column, $object_id ) );
 	if ( empty( $meta_ids ) ) {
 		return add_metadata( $meta_type, $object_id, $raw_meta_key, $passed_value );
 	}
@@ -431,10 +431,10 @@ function delete_metadata( $meta_type, $object_id, $meta_key, $meta_value = '', $
 	$_meta_value = $meta_value;
 	$meta_value  = maybe_serialize( $meta_value );
 
-	$query = $wpdb->prepare( "SELECT $id_column FROM $table WHERE meta_key = %s", $meta_key );
+	$query = $wpdb->prepare( 'SELECT %i FROM %i WHERE meta_key = %s', $id_column, $table, $meta_key );
 
 	if ( ! $delete_all ) {
-		$query .= $wpdb->prepare( " AND $type_column = %d", $object_id );
+		$query .= $wpdb->prepare( ' AND %i = %d', $type_column, $object_id );
 	}
 
 	if ( '' !== $meta_value && null !== $meta_value && false !== $meta_value ) {
@@ -488,7 +488,7 @@ function delete_metadata( $meta_type, $object_id, $meta_key, $meta_value = '', $
 		do_action( 'delete_postmeta', $meta_ids );
 	}
 
-	$query = "DELETE FROM $table WHERE $id_column IN( " . implode( ',', $meta_ids ) . ' )';
+	$query = 'DELETE FROM ' . $wpdb->escape_identifier( $table ) . ' WHERE ' . $wpdb->escape_identifier( $id_column ) . ' IN ( ' . implode( ',', $meta_ids ) . ' )';
 
 	$count = $wpdb->query( $query );
 
@@ -1170,7 +1170,7 @@ function update_meta_cache( $meta_type, $object_ids ) {
 	$id_list   = implode( ',', $non_cached_ids );
 	$id_column = ( 'user' === $meta_type ) ? 'umeta_id' : 'meta_id';
 
-	$meta_list = $wpdb->get_results( "SELECT $column, meta_key, meta_value FROM $table WHERE $column IN ($id_list) ORDER BY $id_column ASC", ARRAY_A );
+	$meta_list = $wpdb->get_results( $wpdb->prepare( 'SELECT %i, meta_key, meta_value FROM %i WHERE %i IN (', $column, $table, $column ) . $id_list . $wpdb->prepare( ') ORDER BY %i ASC', $id_column ) , ARRAY_A );
 
 	if ( ! empty( $meta_list ) ) {
 		foreach ( $meta_list as $metarow ) {

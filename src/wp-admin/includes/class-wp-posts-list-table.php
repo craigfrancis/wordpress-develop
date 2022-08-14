@@ -93,10 +93,11 @@ class WP_Posts_List_Table extends WP_List_Table {
 		$this->user_posts_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT( 1 )
-				FROM $wpdb->posts
+				FROM %i
 				WHERE post_type = %s
 				AND post_status NOT IN ( '" . implode( "','", $exclude_states ) . "' )
 				AND post_author = %d",
+				$wpdb->posts,
 				$post_type,
 				get_current_user_id()
 			)
@@ -118,10 +119,11 @@ class WP_Posts_List_Table extends WP_List_Table {
 			$this->sticky_posts_count = (int) $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT( 1 )
-					FROM $wpdb->posts
+					FROM %i
 					WHERE post_type = %s
 					AND post_status NOT IN ('trash', 'auto-draft')
 					AND ID IN ($sticky_posts)",
+					$wpdb->posts,
 					$post_type
 				)
 			);

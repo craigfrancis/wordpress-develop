@@ -596,7 +596,7 @@ function count_many_users_posts( $users, $post_type = 'post', $public_only = fal
 	$userlist = implode( ',', array_map( 'absint', $users ) );
 	$where    = get_posts_by_author_sql( $post_type, true, null, $public_only );
 
-	$result = $wpdb->get_results( "SELECT post_author, COUNT(*) FROM $wpdb->posts $where AND post_author IN ($userlist) GROUP BY post_author", ARRAY_N );
+	$result = $wpdb->get_results( $wpdb->prepare( 'SELECT post_author, COUNT(*) FROM %i', $wpdb->posts ) . " $where AND post_author IN ($userlist) GROUP BY post_author", ARRAY_N );
 	foreach ( $result as $row ) {
 		$count[ $row[0] ] = $row[1];
 	}
@@ -1248,8 +1248,8 @@ function count_users( $strategy = 'time', $site_id = null ) {
 		$row = $wpdb->get_row(
 			"
 			SELECT {$select_count}, COUNT(*)
-			FROM {$wpdb->usermeta}
-			INNER JOIN {$wpdb->users} ON user_id = ID
+			FROM " . $wpdb->escape_identifier( $wpdb->usermeta ) . '
+			INNER JOIN ' . $wpdb->escape_identifier( $wpdb->users ) . " ON user_id = ID
 			WHERE meta_key = '{$blog_prefix}capabilities'
 		",
 			ARRAY_N
@@ -1277,14 +1277,17 @@ function count_users( $strategy = 'time', $site_id = null ) {
 			'none' => 0,
 		);
 
-		$users_of_blog = $wpdb->get_col(
-			"
+		$users_of_blog = $wpdb->get_col( $wpdb->prepare(
+			'
 			SELECT meta_value
-			FROM {$wpdb->usermeta}
-			INNER JOIN {$wpdb->users} ON user_id = ID
-			WHERE meta_key = '{$blog_prefix}capabilities'
-		"
-		);
+			FROM %i
+			INNER JOIN %i ON user_id = ID
+			WHERE meta_key = %s
+		',
+		$wpdb->usermeta,
+		$wpdb->users,
+		$blog_prefix . 'capabilities'
+		) );
 
 		foreach ( $users_of_blog as $caps_meta ) {
 			$b_roles = maybe_unserialize( $caps_meta );
@@ -1392,12 +1395,12 @@ function wp_update_user_counts( $network_id = null ) {
 		);
 	}
 
-	$query = "SELECT COUNT(ID) as c FROM $wpdb->users";
+	$query = 'SELECT COUNT(ID) as c FROM %i';
 	if ( is_multisite() ) {
-		$query .= " WHERE spam = '0' AND deleted = '0'";
+		$query .= ' WHERE spam = "0" AND deleted = "0"';
 	}
 
-	$count = $wpdb->get_var( $query );
+	$count = $wpdb->get_var( $wpdb->prepare( $query, $wpdb->users ) );
 
 	return update_network_option( $network_id, 'user_count', $count );
 }

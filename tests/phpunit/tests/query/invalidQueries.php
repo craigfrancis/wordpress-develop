@@ -92,8 +92,8 @@ class Tests_Query_InvalidQueries extends WP_UnitTestCase {
 
 		$query = new WP_Query( array( 'post_type' => 'unregistered_cpt' ) );
 
-		$this->assertStringContainsString( "{$wpdb->posts}.post_type = 'unregistered_cpt'", self::$last_posts_request );
-		$this->assertStringContainsString( "{$wpdb->posts}.post_status = 'publish'", self::$last_posts_request );
+		$this->assertStringContainsString( $wpdb->escape_identifier( $wpdb->posts ) . ".post_type = 'unregistered_cpt'", self::$last_posts_request );
+		$this->assertStringContainsString( $wpdb->escape_identifier( $wpdb->posts ) . ".post_status = 'publish'", self::$last_posts_request );
 		$this->assertCount( 0, $query->posts );
 	}
 
@@ -111,7 +111,7 @@ class Tests_Query_InvalidQueries extends WP_UnitTestCase {
 			)
 		);
 
-		$this->assertStringContainsString( "{$wpdb->posts}.post_type = 'unregistered_cpt'", self::$last_posts_request );
+		$this->assertStringContainsString( $wpdb->escape_identifier( $wpdb->posts ) . ".post_type = 'unregistered_cpt'", self::$last_posts_request );
 		$this->assertCount( 1, $query->posts, 'the valid `page` post type should still return one post' );
 	}
 
@@ -125,8 +125,8 @@ class Tests_Query_InvalidQueries extends WP_UnitTestCase {
 
 		$this->go_to( home_url( '?post_type=unregistered_cpt' ) );
 
-		$this->assertStringContainsString( "{$wpdb->posts}.post_type = 'unregistered_cpt'", self::$last_posts_request );
-		$this->assertStringContainsString( "{$wpdb->posts}.post_status = 'publish'", self::$last_posts_request );
+		$this->assertStringContainsString( $wpdb->escape_identifier( $wpdb->posts ) . ".post_type = 'unregistered_cpt'", self::$last_posts_request );
+		$this->assertStringContainsString( $wpdb->escape_identifier( $wpdb->posts ) . ".post_status = 'publish'", self::$last_posts_request );
 		// $wp_query recovers to the post type "post" and is expected to return one.
 		$this->assertCount( 1, $wp_query->get_posts() );
 	}

@@ -129,7 +129,7 @@ class WP_Test_REST_Posts_Controller extends WP_Test_REST_Post_Type_Controller_Te
 
 	public function assertPostsClause( $clause, $pattern ) {
 		global $wpdb;
-		$expected_clause = str_replace( '{posts}', $wpdb->posts, $pattern );
+		$expected_clause = str_replace( '{posts}', $wpdb->escape_identifier( $wpdb->posts ), $pattern );
 		$this->assertCount( 1, $this->posts_clauses );
 		$this->assertSame( $expected_clause, $wpdb->remove_placeholder_escape( $this->posts_clauses[0][ $clause ] ) );
 	}

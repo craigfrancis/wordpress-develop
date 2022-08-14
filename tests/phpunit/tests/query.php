@@ -154,7 +154,7 @@ class Tests_Query extends WP_UnitTestCase {
 			)
 		);
 
-		$this->assertStringContainsString( "ORDER BY $wpdb->posts.post_title DESC, $wpdb->posts.post_date DESC", $q->request );
+		$this->assertStringContainsString( 'ORDER BY ' . $wpdb->escape_identifier( $wpdb->posts ) . '.post_title DESC, ' . $wpdb->escape_identifier( $wpdb->posts ) . '.post_date DESC', $q->request );
 	}
 
 	public function test_cat_querystring_single_term() {

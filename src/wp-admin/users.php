@@ -303,9 +303,9 @@ switch ( $wp_list_table->current_action() ) {
 		$users_have_content = (bool) apply_filters( 'users_have_additional_content', false, $userids );
 
 		if ( $userids && ! $users_have_content ) {
-			if ( $wpdb->get_var( "SELECT ID FROM {$wpdb->posts} WHERE post_author IN( " . implode( ',', $userids ) . ' ) LIMIT 1' ) ) {
+			if ( $wpdb->get_var( $wpdb->prepare( 'SELECT ID FROM %i', $wpdb->posts ) . ' WHERE post_author IN( ' . implode( ',', $userids ) . ' ) LIMIT 1' ) ) {
 				$users_have_content = true;
-			} elseif ( $wpdb->get_var( "SELECT link_id FROM {$wpdb->links} WHERE link_owner IN( " . implode( ',', $userids ) . ' ) LIMIT 1' ) ) {
+			} elseif ( $wpdb->get_var( $wpdb->prepare( 'SELECT link_id FROM %i', $wpdb->links ) . ' WHERE link_owner IN( ' . implode( ',', $userids ) . ' ) LIMIT 1' ) ) {
 				$users_have_content = true;
 			}
 		}

@@ -124,7 +124,7 @@ if ( $doaction ) {
 	$post_ids = array();
 
 	if ( 'delete_all' === $doaction ) {
-		$post_ids = $wpdb->get_col( "SELECT ID FROM $wpdb->posts WHERE post_type='attachment' AND post_status = 'trash'" );
+		$post_ids = $wpdb->get_col( $wpdb->prepare( 'SELECT ID FROM %i WHERE post_type = "attachment" AND post_status = "trash"', $wpdb->posts ) );
 		$doaction = 'delete';
 	} elseif ( isset( $_REQUEST['media'] ) ) {
 		$post_ids = $_REQUEST['media'];

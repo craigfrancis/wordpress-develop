@@ -423,12 +423,12 @@ class WP_Tax_Query {
 				// Store the alias with this clause, so later siblings can use it.
 				$clause['alias'] = $alias;
 
-				$join .= " LEFT JOIN $wpdb->term_relationships";
-				$join .= $i ? " AS $alias" : '';
-				$join .= " ON ($this->primary_table.$this->primary_id_column = $alias.object_id)";
+				$join .= ' LEFT JOIN ' . $wpdb->escape_identifier( $wpdb->term_relationships );
+				$join .= $i ? ' AS ' . $wpdb->escape_identifier( $alias ) : '';
+				$join .= ' ON (' . $wpdb->escape_identifier( $this->primary_table ) . '.' . $wpdb->escape_identifier( $this->primary_id_column ) . ' = ' . $wpdb->escape_identifier( $alias ) . '.object_id)';
 			}
 
-			$where = "$alias.term_taxonomy_id $operator ($terms)";
+			$where = $wpdb->escape_identifier( $alias ) . ".term_taxonomy_id $operator ($terms)";
 
 		} elseif ( 'NOT IN' === $operator ) {
 
@@ -438,9 +438,9 @@ class WP_Tax_Query {
 
 			$terms = implode( ',', $terms );
 
-			$where = "$this->primary_table.$this->primary_id_column NOT IN (
+			$where = $wpdb->escape_identifier( $this->primary_table ) . '.' . $wpdb->escape_identifier( $this->primary_id_column ) . ' NOT IN (
 				SELECT object_id
-				FROM $wpdb->term_relationships
+				FROM ' . $wpdb->escape_identifier( $wpdb->term_relationships ) . "
 				WHERE term_taxonomy_id IN ($terms)
 			)";
 
@@ -454,11 +454,11 @@ class WP_Tax_Query {
 
 			$terms = implode( ',', $terms );
 
-			$where = "(
+			$where = '(
 				SELECT COUNT(1)
-				FROM $wpdb->term_relationships
+				FROM ' . $wpdb->escape_identifier( $wpdb->term_relationships ) . "
 				WHERE term_taxonomy_id IN ($terms)
-				AND object_id = $this->primary_table.$this->primary_id_column
+				AND object_id = " . $wpdb->escape_identifier( $this->primary_table ) . '.' . $wpdb->escape_identifier( $this->primary_id_column ) . "
 			) = $num_terms";
 
 		} elseif ( 'NOT EXISTS' === $operator || 'EXISTS' === $operator ) {

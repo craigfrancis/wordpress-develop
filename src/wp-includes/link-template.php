@@ -1969,7 +1969,7 @@ function get_adjacent_post( $in_same_term = false, $excluded_terms = '', $previo
 	 */
 	$sort = apply_filters( "get_{$adjacent}_post_sort", "ORDER BY p.post_date $order LIMIT 1", $post, $order );
 
-	$query     = "SELECT p.ID FROM $wpdb->posts AS p $join $where $sort";
+	$query     = 'SELECT p.ID FROM ' . $wpdb->escape_identifier( $wpdb->posts ) . " AS p $join $where $sort";
 	$query_key = 'adjacent_post_' . md5( $query );
 	$result    = wp_cache_get( $query_key, 'counts' );
 	if ( false !== $result ) {

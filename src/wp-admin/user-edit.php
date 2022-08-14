@@ -107,8 +107,8 @@ if ( IS_PROFILE_PAGE && isset( $_GET['newuseremail'] ) && $current_user->ID ) {
 		$user             = new stdClass;
 		$user->ID         = $current_user->ID;
 		$user->user_email = esc_html( trim( $new_email['newemail'] ) );
-		if ( is_multisite() && $wpdb->get_var( $wpdb->prepare( "SELECT user_login FROM {$wpdb->signups} WHERE user_login = %s", $current_user->user_login ) ) ) {
-			$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->signups} SET user_email = %s WHERE user_login = %s", $user->user_email, $current_user->user_login ) );
+		if ( is_multisite() && $wpdb->get_var( $wpdb->prepare( 'SELECT user_login FROM %i WHERE user_login = %s', $wpdb->signups, $current_user->user_login ) ) ) {
+			$wpdb->query( $wpdb->prepare( 'UPDATE %i SET user_email = %s WHERE user_login = %s', $wpdb->signups, $user->user_email, $current_user->user_login ) );
 		}
 		wp_update_user( $user );
 		delete_user_meta( $current_user->ID, '_new_email' );
@@ -158,8 +158,8 @@ switch ( $action ) {
 		if ( is_multisite() ) {
 			$user = get_userdata( $user_id );
 
-			if ( $user->user_login && isset( $_POST['email'] ) && is_email( $_POST['email'] ) && $wpdb->get_var( $wpdb->prepare( "SELECT user_login FROM {$wpdb->signups} WHERE user_login = %s", $user->user_login ) ) ) {
-				$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->signups} SET user_email = %s WHERE user_login = %s", $_POST['email'], $user_login ) );
+			if ( $user->user_login && isset( $_POST['email'] ) && is_email( $_POST['email'] ) && $wpdb->get_var( $wpdb->prepare( 'SELECT user_login FROM %i WHERE user_login = %s', $wpdb->signups, $user->user_login ) ) ) {
+				$wpdb->query( $wpdb->prepare( 'UPDATE %i SET user_email = %s WHERE user_login = %s', $wpdb->signups, $_POST['email'], $user_login ) );
 			}
 		}
 

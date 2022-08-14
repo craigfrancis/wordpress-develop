@@ -487,8 +487,20 @@ class WP_Date_Query {
 			'last_updated',
 		);
 
-		// Attempt to detect a table prefix.
-		if ( false === strpos( $column, '.' ) ) {
+		$alias_pos = strpos( $column, '.' );
+
+		if ( false !== $alias_pos ) {
+
+			$column_sql  = $wpdb->escape_identifier( substr( $column, 0, $alias_pos ) );
+			$column_sql .= '.';
+			$column_sql .= $wpdb->escape_identifier( substr( $column, ( $alias_pos + 1 ) ) );
+
+// error_log(var_export($column, true));
+// error_log(var_export($column_sql, true));
+// error_log(var_export('WP_Date_Query1', true));
+// exit('TODO TEST WP_Date_Query1');
+
+		} else { // Attempt to detect a table prefix.
 			/**
 			 * Filters the list of valid date query columns.
 			 *
@@ -525,17 +537,27 @@ class WP_Date_Query {
 				),
 			);
 
+			$column_sql = NULL;
+
 			// If it's a known column name, add the appropriate table prefix.
 			foreach ( $known_columns as $table_name => $table_columns ) {
 				if ( in_array( $column, $table_columns, true ) ) {
-					$column = $table_name . '.' . $column;
+					$column_sql = $wpdb->escape_identifier( $table_name ) . '.' . $wpdb->escape_identifier( $column );
 					break;
 				}
 			}
+
+			if ( NULL === $column_sql ) {
+// error_log(var_export($column, true));
+// error_log(var_export($column_sql, true));
+// error_log(var_export('WP_Date_Query2', true));
+// exit('TODO TEST WP_Date_Query2');
+				$column_sql = $wpdb->escape_identifier( $column );
+			}
+
 		}
 
-		// Remove unsafe characters.
-		return preg_replace( '/[^a-zA-Z0-9_$\.]/', '', $column );
+		return $column_sql;
 	}
 
 	/**

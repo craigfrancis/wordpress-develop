@@ -2822,7 +2822,7 @@ function media_upload_library_form( $errors ) {
 	<div class="alignleft actions">
 		<?php
 
-		$arc_query = "SELECT DISTINCT YEAR(post_date) AS yyear, MONTH(post_date) AS mmonth FROM $wpdb->posts WHERE post_type = 'attachment' ORDER BY post_date DESC";
+		$arc_query = $wpdb->prepare( 'SELECT DISTINCT YEAR(post_date) AS yyear, MONTH(post_date) AS mmonth FROM %i WHERE post_type = "attachment" ORDER BY post_date DESC', $wpdb->posts );
 
 		$arc_result = $wpdb->get_results( $arc_query );
 
@@ -3806,9 +3806,9 @@ function wp_media_attach_action( $parent_id, $action = 'attach' ) {
 		$ids_string = implode( ',', $ids );
 
 		if ( 'attach' === $action ) {
-			$result = $wpdb->query( $wpdb->prepare( "UPDATE $wpdb->posts SET post_parent = %d WHERE post_type = 'attachment' AND ID IN ( $ids_string )", $parent_id ) );
+			$result = $wpdb->query( $wpdb->prepare( "UPDATE %i SET post_parent = %d WHERE post_type = 'attachment' AND ID IN ( $ids_string )", $wpdb->posts, $parent_id ) );
 		} else {
-			$result = $wpdb->query( "UPDATE $wpdb->posts SET post_parent = 0 WHERE post_type = 'attachment' AND ID IN ( $ids_string )" );
+			$result = $wpdb->query( $wpdb->prepare( "UPDATE %i SET post_parent = 0 WHERE post_type = 'attachment' AND ID IN ( $ids_string )", $wpdb->posts ) );
 		}
 	}
 

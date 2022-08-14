@@ -387,7 +387,7 @@ function wp_delete_user( $id, $reassign = null ) {
 		 */
 		$post_types_to_delete = apply_filters( 'post_types_to_delete_with_user', $post_types_to_delete, $id );
 		$post_types_to_delete = implode( "', '", $post_types_to_delete );
-		$post_ids             = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_author = %d AND post_type IN ('$post_types_to_delete')", $id ) );
+		$post_ids             = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM %i WHERE post_author = %d AND post_type IN ('$post_types_to_delete')", $wpdb->posts, $id ) );
 		if ( $post_ids ) {
 			foreach ( $post_ids as $post_id ) {
 				wp_delete_post( $post_id );

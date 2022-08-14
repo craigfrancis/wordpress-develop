@@ -959,7 +959,7 @@ function redirect_guess_404_permalink() {
 
 		$publicly_viewable_statuses = array_filter( get_post_stati(), 'is_post_status_viewable' );
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$post_id = $wpdb->get_var( "SELECT ID FROM $wpdb->posts WHERE $where AND post_status IN ('" . implode( "', '", esc_sql( $publicly_viewable_statuses ) ) . "')" );
+		$post_id = $wpdb->get_var( $wpdb->prepare( 'SELECT ID FROM %i WHERE', $wpdb->posts ) . " post_status IN ('" . implode( "', '", esc_sql( $publicly_viewable_statuses ) ) . "') AND " . $where );
 
 		if ( ! $post_id ) {
 			return false;

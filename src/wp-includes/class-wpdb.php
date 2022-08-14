@@ -649,27 +649,27 @@ class wpdb {
 	 *
 	 * Historically this could be used for table/field names, or for some string formatting, e.g.
 	 *
-	 *     $wpdb->prepare( 'WHERE `%1s` = "%1s something %1s" OR %1$s = "%-10s"', 'field_1', 'a', 'b', 'c' );
+	 *     $wpdb->prepare( 'WHERE `%1$s` = "%1$s something %1$s" OR %1$s = "%-10s"', 'field_1', 'a', 'b', 'c' );
 	 *
 	 * But it's risky, e.g. forgetting to add quotes, resulting in SQL Injection vulnerabilities:
 	 *
-	 *     $wpdb->prepare( 'WHERE (id = %1s) OR (id = %2$s)', $_GET['id'], $_GET['id'] ); // ?id=id
+	 *     $wpdb->prepare( 'WHERE (id = %1$s) OR (id = %2$s)', $_GET['id'], $_GET['id'] ); // ?id=id
 	 *
 	 * This feature is preserved while plugin authors update their code to use safer approaches:
 	 *
-	 *     $wpdb->prepare( 'WHERE %1s = %s', $_GET['key'], $_GET['value'] );
-	 *     $wpdb->prepare( 'WHERE %i  = %s', $_GET['key'], $_GET['value'] );
+	 *     $wpdb->prepare( 'WHERE %1$s = %s', $_GET['key'], $_GET['value'] );
+	 *     $wpdb->prepare( 'WHERE %i   = %s', $_GET['key'], $_GET['value'] );
 	 *
 	 * While changing to false will be fine for queries not using formatted/argnum placeholders,
 	 * any remaining cases are most likely going to result in SQL errors (good, in a way):
 	 *
-	 *     $wpdb->prepare( 'WHERE %1s = "%-10s"', 'my_field', 'my_value' );
+	 *     $wpdb->prepare( 'WHERE %1$s = "%-10s"', 'my_field', 'my_value' );
 	 *     true  = WHERE my_field = "my_value  "
 	 *     false = WHERE 'my_field' = "'my_value  '"
 	 *
 	 * But there may be some queries that result in an SQL Injection vulnerability:
 	 *
-	 *     $wpdb->prepare( 'WHERE id = %1s', $_GET['id'] ); // ?id=id
+	 *     $wpdb->prepare( 'WHERE id = %1$s', $_GET['id'] ); // ?id=id
 	 *
 	 * So there may need to be a `_doing_it_wrong()` phase, after we know everyone can use
 	 * identifier placeholders (%i), but before this feature is disabled or removed.
@@ -1017,9 +1017,9 @@ class wpdb {
 	 */
 	public function set_prefix( $prefix, $set_table_names = true ) {
 
-		if ( preg_match( '|[^a-z0-9_]|i', $prefix ) ) {
-			return new WP_Error( 'invalid_db_prefix', 'Invalid database prefix' );
-		}
+		// if ( preg_match( '|[^a-z0-9_]|i', $prefix ) ) {
+		// 	return new WP_Error( 'invalid_db_prefix', 'Invalid database prefix' );
+		// }
 
 		$old_prefix = is_multisite() ? '' : $prefix;
 
@@ -1402,7 +1402,6 @@ class wpdb {
 	 * - To quote the identifier itself, you need to double the character, e.g. `a``b`.
 	 *
 	 * @since 6.1.0
-	 * @access private
 	 *
 	 * @link https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
 	 *
@@ -1422,6 +1421,8 @@ class wpdb {
 	 * - %f (float)
 	 * - %s (string)
 	 * - %i (identifier, e.g. table/field names)
+	 *
+	 * - %...d (an array of integers, e.g. 'WHERE id IN (%...d)')
 	 *
 	 * All placeholders MUST be left unquoted in the query string. A corresponding argument
 	 * MUST be passed for each placeholder.
@@ -1458,6 +1459,8 @@ class wpdb {
 	 *              Check support via `wpdb::has_cap( 'identifier_placeholders' )`.
 	 *              This preserves compatibility with sprintf(), as the C version uses
 	 *              `%d` and `$i` as a signed integer, whereas PHP only supports `%d`.
+	 * @since 6.1.0 Added `%...d` and `%...s` to work with the `IN()` operator, e.g.
+	 *              'WHERE id IN (%...d) AND type = (%...s)', [[4, 29, 51], ['post', 'page']]
 	 *
 	 * @link https://www.php.net/sprintf Description of syntax.
 	 *
@@ -1511,10 +1514,10 @@ class wpdb {
 		$query = str_replace( '"%s"', '%s', $query ); // Strip any existing double quotes.
 
 		// Escape any unescaped percents (i.e. anything unrecognised).
-		$query = preg_replace( "/%(?:%|$|(?!($allowed_format)?[sdfFi]))/", '%%\\1', $query );
+		$query = preg_replace( "/%(?:%|$|(?!($allowed_format|\.\.\.)?[sdfFi]))/", '%%\\1', $query );
 
 		// Extract placeholders from the query.
-		$split_query = preg_split( "/(^|[^%]|(?:%%)+)(%(?:$allowed_format)?[sdfFi])/", $query, -1, PREG_SPLIT_DELIM_CAPTURE );
+		$split_query = preg_split( "/(^|[^%]|(?:%%)+)(%(?:$allowed_format|\.\.\.)?[sdfFi])/", $query, -1, PREG_SPLIT_DELIM_CAPTURE );
 
 		$split_query_count = count( $split_query );
 		/*
@@ -1525,6 +1528,9 @@ class wpdb {
 
 		// If args were passed as an array, as in vsprintf(), move them up.
 		$passed_as_array = ( isset( $args[0] ) && is_array( $args[0] ) && 1 === count( $args ) );
+		if ( $passed_as_array && isset( $split_query[2] ) && substr( $split_query[2], 1, -1 ) === '...' && false === is_array( $args[0][0] ) ) {
+			$passed_as_array = false; // The first (and only) placeholder, is using variadics (e.g. '%...d'), but the args were *not* passed as an array, e.g. $wpdb->prepare('id IN (%...d)', [ [ 1, 2, 3 ] ] );
+		}
 		if ( $passed_as_array ) {
 			$args = $args[0];
 		}
@@ -1534,6 +1540,7 @@ class wpdb {
 		$arg_id          = 0;
 		$arg_identifiers = array();
 		$arg_strings     = array();
+		$arg_variadics   = array();
 
 		while ( $key < $split_query_count ) {
 			$placeholder = $split_query[ $key ];
@@ -1546,7 +1553,18 @@ class wpdb {
 				$placeholder = '%' . $format . $type;
 			}
 
-			if ( 'i' === $type ) {
+			if ( '...' === $format ) {
+				if ( 'i' === $type ) {
+					$new_placeholder   = '`%s`';
+					$arg_identifiers[] = $arg_id;
+				} elseif ( 'd' === $type || 'F' === $type ) {
+					$new_placeholder = '%' . $type; // No need to quote integers or floats.
+				} else {
+					$new_placeholder = "'%" . $type . "'";
+				}
+				$placeholder     = substr( str_repeat( $new_placeholder . ',', count( $args[ $arg_id ] ) ), 0, -1 );
+				$arg_variadics[] = $arg_id;
+			} elseif ( 'i' === $type ) {
 				$placeholder = '`%' . $format . 's`';
 				// Using a simple strpos() due to previous checking (e.g. $allowed_format).
 				$argnum_pos = strpos( $format, '$' );
@@ -1592,7 +1610,7 @@ class wpdb {
 				'wpdb::prepare',
 				sprintf(
 					/* translators: %s: A comma-separated list of arguments found to be a problem. */
-					__( 'Arguments (%s) cannot be used for both String and Identifier escaping.' ),
+					__( 'Arguments (%s) cannot be prepared to be used as both an Identifier as well as a Value.' ),
 					implode( ', ', $dual_use )
 				),
 				'6.1.0'
@@ -1661,7 +1679,13 @@ class wpdb {
 		$args_escaped = array();
 
 		foreach ( $args as $i => $value ) {
-			if ( in_array( $i, $arg_identifiers, true ) ) {
+			if ( in_array( $i, $arg_variadics, true ) ) {
+				if ( in_array( $i, $arg_identifiers, true ) ) {
+					$args_escaped = array_merge( $args_escaped, array_map( array( $this, '_escape_identifier_value' ), $value ) );
+				} else {
+					$args_escaped = array_merge( $args_escaped, array_map( array( $this, '_real_escape' ), $value ) );
+				}
+			} elseif ( in_array( $i, $arg_identifiers, true ) ) {
 				$args_escaped[] = $this->_escape_identifier_value( $value );
 			} elseif ( is_int( $value ) || is_float( $value ) ) {
 				$args_escaped[] = $value;
@@ -1701,7 +1725,7 @@ class wpdb {
 	 *     $wild = '%';
 	 *     $find = 'only 43% of planets';
 	 *     $like = $wild . $wpdb->esc_like( $find ) . $wild;
-	 *     $sql  = $wpdb->prepare( "SELECT * FROM $wpdb->posts WHERE post_content LIKE %s", $like );
+	 *     $sql  = $wpdb->prepare( 'SELECT * FROM %i WHERE post_content LIKE %s', $wpdb->posts, $like );
 	 *
 	 * Example Escape Chain:
 	 *
@@ -1747,13 +1771,25 @@ class wpdb {
 			return false;
 		}
 
+// if (preg_match('/^Table \'test-wordpress.wp.+\' doesn\'t exist$/', $str)) {
+// 	// error_log( $str );
+// 	return false;
+// }
+
 		$caller = $this->get_caller();
 		if ( $caller ) {
 			// Not translated, as this will only appear in the error log.
-			$error_str = sprintf( 'WordPress database error %1$s for query %2$s made by %3$s', $str, $this->last_query, $caller );
+			$error_str = sprintf( 'WordPress database error %1$s for query %2$s made by %3$s', $str, "\n\n" . $this->last_query . "\n\n", $caller );
 		} else {
-			$error_str = sprintf( 'WordPress database error %1$s for query %2$s', $str, $this->last_query );
+			$error_str = sprintf( 'WordPress database error %1$s for query %2$s', $str, "\n\n" . $this->last_query . "\n\n" );
 		}
+
+foreach (debug_backtrace() as $called_from) {
+	if (isset($called_from['file'])) {
+		$error_str .= "\n" . $called_from['file'] . ':' . $called_from['line'];
+		// break;
+	}
+}
 
 		error_log( $error_str );
 
@@ -1806,6 +1842,7 @@ class wpdb {
 	 * @return bool Whether showing of errors was previously active.
 	 */
 	public function show_errors( $show = true ) {
+// error_log('show_errors');
 		$errors            = $this->show_errors;
 		$this->show_errors = $show;
 		return $errors;
@@ -1823,6 +1860,7 @@ class wpdb {
 	 * @return bool Whether showing of errors was previously active.
 	 */
 	public function hide_errors() {
+// error_log('hide_errors');
 		$show              = $this->show_errors;
 		$this->show_errors = false;
 		return $show;
@@ -1841,6 +1879,7 @@ class wpdb {
 	 * @return bool Whether suppressing of errors was previously active.
 	 */
 	public function suppress_errors( $suppress = true ) {
+//error_log('suppress_errors');
 		$errors                = $this->suppress_errors;
 		$this->suppress_errors = (bool) $suppress;
 		return $errors;
@@ -2041,6 +2080,7 @@ class wpdb {
 	 * }
 	 */
 	public function parse_db_host( $host ) {
+		$port    = null;
 		$socket  = null;
 		$is_ipv6 = false;
 
@@ -2069,9 +2109,12 @@ class wpdb {
 			return false;
 		}
 
-		$host = ! empty( $matches['host'] ) ? $matches['host'] : '';
-		// MySQLi port cannot be a string; must be null or an integer.
-		$port = ! empty( $matches['port'] ) ? absint( $matches['port'] ) : null;
+		$host = '';
+		foreach ( array( 'host', 'port' ) as $component ) {
+			if ( ! empty( $matches[ $component ] ) ) {
+				$$component = $matches[ $component ];
+			}
+		}
 
 		return array( $host, $port, $socket, $is_ipv6 );
 	}
@@ -2564,10 +2607,13 @@ class wpdb {
 		$fields  = '`' . implode( '`, `', array_keys( $data ) ) . '`';
 		$formats = implode( ', ', $formats );
 
-		$sql = "$type INTO `$table` ($fields) VALUES ($formats)";
+		$sql = "$type INTO %i ($fields) VALUES ($formats)";
 
 		$this->check_current_query = false;
-		return $this->query( $this->prepare( $sql, $values ) );
+
+		$args = array_merge( array( $table ), $values );
+
+		return $this->query( $this->prepare( $sql, $args ) );
 	}
 
 	/**
@@ -3085,9 +3131,13 @@ class wpdb {
 		$charsets = array();
 		$columns  = array();
 
-		$table_parts = explode( '.', $table );
-		$table       = '`' . implode( '`.`', $table_parts ) . '`';
-		$results     = $this->get_results( "SHOW FULL COLUMNS FROM $table" );
+// TODO: Could this do anything... maybe `database`.`table`?
+		// $table_parts = explode( '.', $table );
+		// $table       = '`' . implode( '`.`', $table_parts ) . '`';
+// if ($table === 'wp') {
+// 	error_log(var_export( $this->prepare( 'SHOW FULL COLUMNS FROM %i', $table )  , true));
+// }
+		$results     = $this->get_results( $this->prepare( 'SHOW FULL COLUMNS FROM %i', $table ) );
 		if ( ! $results ) {
 			return new WP_Error( 'wpdb_get_table_charset_failure', __( 'Could not retrieve table charset.' ) );
 		}
@@ -3641,6 +3691,7 @@ class wpdb {
 	 * @return string|false The table name found, or false if a table couldn't be found.
 	 */
 	protected function get_table_from_query( $query ) {
+
 		// Remove characters that can legally trail the table name.
 		$query = rtrim( $query, ';/-#' );
 
@@ -3662,6 +3713,9 @@ class wpdb {
 			$query,
 			$maybe
 		) ) {
+// TODO: Cannot find table name with the table_prefix "wp ", even when it's quoted with `
+// error_log(var_export('A', true));
+// error_log(var_export($maybe, true));
 			return str_replace( '`', '', $maybe[1] );
 		}
 
@@ -3968,9 +4022,11 @@ class wpdb {
 			case 'utf8mb4_520': // @since 4.6.0
 				return version_compare( $version, '5.6', '>=' );
 			case 'identifier_placeholders': // @since 6.1.0
+			case 'variadic_placeholders':   // @since 6.1.0
 				/*
-				 * As of WordPress 6.1, wpdb::prepare() supports identifiers via '%i',
-				 * e.g. table/field names.
+				 * As of WordPress 6.1, wpdb::prepare() supports:
+				 * - identifiers via '%i', e.g. table/field names.
+				 * - variadics via `%...d`, e.g. `IN (%...d)`.
 				 */
 				return true;
 		}

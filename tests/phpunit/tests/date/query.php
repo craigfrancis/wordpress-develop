@@ -236,49 +236,49 @@ class Tests_Date_Query extends WP_UnitTestCase {
 		global $wpdb;
 		$q = new WP_Date_Query( array() );
 
-		$this->assertSame( $wpdb->posts . '.post_date', $q->validate_column( 'post_date' ) );
+		$this->assertSame( $wpdb->escape_identifier( $wpdb->posts ) . '.`post_date`', $q->validate_column( 'post_date' ) );
 	}
 
 	public function test_validate_column_post_date_gmt() {
 		global $wpdb;
 		$q = new WP_Date_Query( array() );
 
-		$this->assertSame( $wpdb->posts . '.post_date_gmt', $q->validate_column( 'post_date_gmt' ) );
+		$this->assertSame( $wpdb->escape_identifier( $wpdb->posts ) . '.`post_date_gmt`', $q->validate_column( 'post_date_gmt' ) );
 	}
 
 	public function test_validate_column_post_modified() {
 		global $wpdb;
 		$q = new WP_Date_Query( array() );
 
-		$this->assertSame( $wpdb->posts . '.post_modified', $q->validate_column( 'post_modified' ) );
+		$this->assertSame( $wpdb->escape_identifier( $wpdb->posts ) . '.`post_modified`', $q->validate_column( 'post_modified' ) );
 	}
 
 	public function test_validate_column_post_modified_gmt() {
 		global $wpdb;
 		$q = new WP_Date_Query( array() );
 
-		$this->assertSame( $wpdb->posts . '.post_modified_gmt', $q->validate_column( 'post_modified_gmt' ) );
+		$this->assertSame( $wpdb->escape_identifier( $wpdb->posts ) . '.`post_modified_gmt`', $q->validate_column( 'post_modified_gmt' ) );
 	}
 
 	public function test_validate_column_comment_date() {
 		global $wpdb;
 		$q = new WP_Date_Query( array() );
 
-		$this->assertSame( $wpdb->comments . '.comment_date', $q->validate_column( 'comment_date' ) );
+		$this->assertSame( $wpdb->escape_identifier( $wpdb->comments ) . '.`comment_date`', $q->validate_column( 'comment_date' ) );
 	}
 
 	public function test_validate_column_comment_date_gmt() {
 		global $wpdb;
 		$q = new WP_Date_Query( array() );
 
-		$this->assertSame( $wpdb->comments . '.comment_date_gmt', $q->validate_column( 'comment_date_gmt' ) );
+		$this->assertSame( $wpdb->escape_identifier( $wpdb->comments ) . '.`comment_date_gmt`', $q->validate_column( 'comment_date_gmt' ) );
 	}
 
 	public function test_validate_column_invalid() {
 		global $wpdb;
 		$q = new WP_Date_Query( array() );
 
-		$this->assertSame( $wpdb->posts . '.post_date', $q->validate_column( 'foo' ) );
+		$this->assertSame( $wpdb->escape_identifier( $wpdb->posts ) . '.`post_date`', $q->validate_column( 'foo' ) );
 	}
 
 	/**
@@ -289,7 +289,7 @@ class Tests_Date_Query extends WP_UnitTestCase {
 
 		add_filter( 'date_query_valid_columns', array( $this, 'date_query_valid_columns_callback' ) );
 
-		$this->assertSame( 'my_custom_column', $q->validate_column( 'my_custom_column' ) );
+		$this->assertSame( '`my_custom_column`', $q->validate_column( 'my_custom_column' ) );
 
 		remove_filter( 'date_query_valid_columns', array( $this, 'date_query_valid_columns_callback' ) );
 	}
@@ -305,7 +305,7 @@ class Tests_Date_Query extends WP_UnitTestCase {
 	public function test_validate_column_prefixed_column_name() {
 		$q = new WP_Date_Query( array() );
 
-		$this->assertSame( 'foo.bar', $q->validate_column( 'foo.bar' ) );
+		$this->assertSame( '`foo`.`bar`', $q->validate_column( 'foo.bar' ) );
 	}
 
 	/**
@@ -314,7 +314,7 @@ class Tests_Date_Query extends WP_UnitTestCase {
 	public function test_validate_column_prefixed_column_name_with_illegal_characters() {
 		$q = new WP_Date_Query( array() );
 
-		$this->assertSame( 'foo.bar', $q->validate_column( 'f"\'oo\/.b;:()ar' ) );
+		$this->assertSame( '`f"\'oo\/`.`b;:()ar`', $q->validate_column( 'f"\'oo\/.b;:()ar' ) );
 	}
 
 	public function test_build_value_value_null() {

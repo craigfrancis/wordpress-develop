@@ -307,21 +307,21 @@ class WP_User_Query {
 			$this->query_fields = array();
 			foreach ( $qv['fields'] as $field ) {
 				$field                = 'id' === $field ? 'ID' : sanitize_key( $field );
-				$this->query_fields[] = "$wpdb->users.$field";
+				$this->query_fields[] = $wpdb->escape_identifier( $wpdb->users ) . '.' . $wpdb->escape_identifier( $field );
 			}
 			$this->query_fields = implode( ',', $this->query_fields );
 		} elseif ( 'all_with_meta' === $qv['fields'] || 'all' === $qv['fields'] || ! in_array( $qv['fields'], $allowed_fields, true ) ) {
-			$this->query_fields = "$wpdb->users.ID";
+			$this->query_fields = $wpdb->escape_identifier( $wpdb->users ) . '.ID';
 		} else {
 			$field              = 'id' === strtolower( $qv['fields'] ) ? 'ID' : sanitize_key( $qv['fields'] );
-			$this->query_fields = "$wpdb->users.$field";
+			$this->query_fields = $wpdb->escape_identifier( $wpdb->users ) . '.' . $wpdb->escape_identifier( $field );
 		}
 
 		if ( isset( $qv['count_total'] ) && $qv['count_total'] ) {
 			$this->query_fields = 'SQL_CALC_FOUND_ROWS ' . $this->query_fields;
 		}
 
-		$this->query_from  = "FROM $wpdb->users";
+		$this->query_from  = 'FROM ' . $wpdb->escape_identifier( $wpdb->users );
 		$this->query_where = 'WHERE 1=1';
 
 		// Parse and sanitize 'include', for use by 'orderby' as well as 'include' below.
@@ -348,7 +348,7 @@ class WP_User_Query {
 			}
 
 			$posts_table        = $wpdb->get_blog_prefix( $blog_id ) . 'posts';
-			$this->query_where .= " AND $wpdb->users.ID IN ( SELECT DISTINCT $posts_table.post_author FROM $posts_table WHERE $posts_table.post_status = 'publish' AND $posts_table.post_type IN ( " . implode( ', ', $post_types ) . ' ) )';
+			$this->query_where .= ' AND ' . $wpdb->escape_identifier( $wpdb->users ) . ".ID IN ( SELECT DISTINCT $posts_table.post_author FROM $posts_table WHERE $posts_table.post_status = 'publish' AND $posts_table.post_type IN ( " . implode( ', ', $post_types ) . ' ) )';
 		}
 
 		// nicename
@@ -741,10 +741,10 @@ class WP_User_Query {
 		if ( ! empty( $include ) ) {
 			// Sanitized earlier.
 			$ids                = implode( ',', $include );
-			$this->query_where .= " AND $wpdb->users.ID IN ($ids)";
+			$this->query_where .= ' AND ' . $wpdb->escape_identifier( $wpdb->users ) . ".ID IN ($ids)";
 		} elseif ( ! empty( $qv['exclude'] ) ) {
 			$ids                = implode( ',', wp_parse_id_list( $qv['exclude'] ) );
-			$this->query_where .= " AND $wpdb->users.ID NOT IN ($ids)";
+			$this->query_where .= ' AND ' . $wpdb->escape_identifier( $wpdb->users ) . ".ID NOT IN ($ids)";
 		}
 
 		// Date queries are allowed for the user_registered field.
@@ -968,8 +968,8 @@ class WP_User_Query {
 				FROM $wpdb->posts
 				$where
 				GROUP BY post_author
-			) p ON ({$wpdb->users}.ID = p.post_author)
-			";
+			) p ON (" . $wpdb->escape_identifier( $wpdb->users ) . '.ID = p.post_author)
+			';
 			$_orderby          = 'post_count';
 		} elseif ( 'ID' === $orderby || 'id' === $orderby ) {
 			$_orderby = 'ID';
@@ -980,7 +980,7 @@ class WP_User_Query {
 		} elseif ( 'include' === $orderby && ! empty( $this->query_vars['include'] ) ) {
 			$include     = wp_parse_id_list( $this->query_vars['include'] );
 			$include_sql = implode( ',', $include );
-			$_orderby    = "FIELD( $wpdb->users.ID, $include_sql )";
+			$_orderby    = 'FIELD( ' . $wpdb->escape_identifier( $wpdb->users ) . ".ID, $include_sql )";
 		} elseif ( 'nicename__in' === $orderby ) {
 			$sanitized_nicename__in = array_map( 'esc_sql', $this->query_vars['nicename__in'] );
 			$nicename__in           = implode( "','", $sanitized_nicename__in );

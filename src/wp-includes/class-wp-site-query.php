@@ -475,7 +475,7 @@ class WP_Site_Query {
 
 			$orderby = implode( ', ', $orderby_array );
 		} else {
-			$orderby = "{$wpdb->blogs}.blog_id $order";
+			$orderby = $wpdb->escape_identifier( $wpdb->blogs ) . ".blog_id $order";
 		}
 
 		$number = absint( $this->query_vars['number'] );
@@ -493,23 +493,23 @@ class WP_Site_Query {
 		if ( $this->query_vars['count'] ) {
 			$fields = 'COUNT(*)';
 		} else {
-			$fields = "{$wpdb->blogs}.blog_id";
+			$fields = $wpdb->escape_identifier( $wpdb->blogs ) . '.blog_id';
 		}
 
 		// Parse site IDs for an IN clause.
 		$site_id = absint( $this->query_vars['ID'] );
 		if ( ! empty( $site_id ) ) {
-			$this->sql_clauses['where']['ID'] = $wpdb->prepare( "{$wpdb->blogs}.blog_id = %d", $site_id );
+			$this->sql_clauses['where']['ID'] = $wpdb->prepare( '%i.blog_id = %d', $wpdb->blogs, $site_id );
 		}
 
 		// Parse site IDs for an IN clause.
 		if ( ! empty( $this->query_vars['site__in'] ) ) {
-			$this->sql_clauses['where']['site__in'] = "{$wpdb->blogs}.blog_id IN ( " . implode( ',', wp_parse_id_list( $this->query_vars['site__in'] ) ) . ' )';
+			$this->sql_clauses['where']['site__in'] = $wpdb->escape_identifier( $wpdb->blogs ) . '.blog_id IN ( ' . implode( ',', wp_parse_id_list( $this->query_vars['site__in'] ) ) . ' )';
 		}
 
 		// Parse site IDs for a NOT IN clause.
 		if ( ! empty( $this->query_vars['site__not_in'] ) ) {
-			$this->sql_clauses['where']['site__not_in'] = "{$wpdb->blogs}.blog_id NOT IN ( " . implode( ',', wp_parse_id_list( $this->query_vars['site__not_in'] ) ) . ' )';
+			$this->sql_clauses['where']['site__not_in'] = $wpdb->escape_identifier( $wpdb->blogs ) . '.blog_id NOT IN ( ' . implode( ',', wp_parse_id_list( $this->query_vars['site__not_in'] ) ) . ' )';
 		}
 
 		$network_id = absint( $this->query_vars['network_id'] );
@@ -642,7 +642,7 @@ class WP_Site_Query {
 			$this->sql_clauses['where']['meta_query'] = preg_replace( '/^\s*AND\s*/', '', $this->meta_query_clauses['where'] );
 
 			if ( ! $this->query_vars['count'] ) {
-				$groupby = "{$wpdb->blogs}.blog_id";
+				$groupby = $wpdb->escape_identifier( $wpdb->blogs ) . '.blog_id';
 			}
 		}
 
@@ -685,7 +685,7 @@ class WP_Site_Query {
 		}
 
 		$this->sql_clauses['select']  = "SELECT $found_rows $fields";
-		$this->sql_clauses['from']    = "FROM $wpdb->blogs $join";
+		$this->sql_clauses['from']    = 'FROM ' . $wpdb->escape_identifier( $wpdb->blogs ) . ' ' . $join;
 		$this->sql_clauses['groupby'] = $groupby;
 		$this->sql_clauses['orderby'] = $orderby;
 		$this->sql_clauses['limits']  = $limits;
@@ -780,11 +780,11 @@ class WP_Site_Query {
 		switch ( $orderby ) {
 			case 'site__in':
 				$site__in = implode( ',', array_map( 'absint', $this->query_vars['site__in'] ) );
-				$parsed   = "FIELD( {$wpdb->blogs}.blog_id, $site__in )";
+				$parsed   = 'FIELD( ' . $wpdb->escape_identifier( $wpdb->blogs ) . ".blog_id, $site__in )";
 				break;
 			case 'network__in':
 				$network__in = implode( ',', array_map( 'absint', $this->query_vars['network__in'] ) );
-				$parsed      = "FIELD( {$wpdb->blogs}.site_id, $network__in )";
+				$parsed      = 'FIELD( ' . $wpdb->escape_identifier( $wpdb->blogs ) . ".site_id, $network__in )";
 				break;
 			case 'domain':
 			case 'last_updated':
@@ -807,7 +807,7 @@ class WP_Site_Query {
 				$parsed = 'CHAR_LENGTH(path)';
 				break;
 			case 'id':
-				$parsed = "{$wpdb->blogs}.blog_id";
+				$parsed = $wpdb->escape_identifier( $wpdb->blogs ) . '.blog_id';
 				break;
 		}
 

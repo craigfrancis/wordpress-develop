@@ -243,7 +243,7 @@ function wp_get_post_autosave( $post_id, $user_id = 0 ) {
 	// Construct the autosave query.
 	$autosave_query = "
 		SELECT *
-		FROM $wpdb->posts
+		FROM %i
 		WHERE post_parent = %d
 		AND post_type = 'revision'
 		AND post_status = 'inherit'
@@ -254,6 +254,7 @@ function wp_get_post_autosave( $post_id, $user_id = 0 ) {
 	$autosave = $wpdb->get_results(
 		$wpdb->prepare(
 			$autosave_query,
+			$wpdb->posts,
 			$post_id,
 			$autosave_name
 		)

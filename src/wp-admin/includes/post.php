@@ -556,7 +556,7 @@ function bulk_edit_posts( $post_data = null ) {
 
 	if ( isset( $post_data['post_parent'] ) && (int) $post_data['post_parent'] ) {
 		$parent   = (int) $post_data['post_parent'];
-		$pages    = $wpdb->get_results( "SELECT ID, post_parent FROM $wpdb->posts WHERE post_type = 'page'" );
+		$pages    = $wpdb->get_results( $wpdb->prepare( 'SELECT ID, post_parent FROM %i WHERE post_type = "page"', $wpdb->posts ) );
 		$children = array();
 
 		for ( $i = 0; $i < 50 && $parent > 0; $i++ ) {
@@ -795,7 +795,7 @@ function post_exists( $title, $content = '', $date = '', $type = '', $status = '
 	$post_type    = wp_unslash( sanitize_post_field( 'post_type', $type, 0, 'db' ) );
 	$post_status  = wp_unslash( sanitize_post_field( 'post_status', $status, 0, 'db' ) );
 
-	$query = "SELECT ID FROM $wpdb->posts WHERE 1=1";
+	$query = 'SELECT ID FROM ' . $wpdb->escape_identifier( $wpdb->posts ) . ' WHERE 1=1';
 	$args  = array();
 
 	if ( ! empty( $date ) ) {

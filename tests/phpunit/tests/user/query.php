@@ -400,7 +400,7 @@ class Tests_User_Query extends WP_UnitTestCase {
 			)
 		);
 
-		$expected_orderby = 'ORDER BY FIELD( ' . $wpdb->users . '.ID, ' . self::$author_ids[1] . ',' . self::$author_ids[0] . ',' . self::$author_ids[3] . ' )';
+		$expected_orderby = 'ORDER BY FIELD( ' . $wpdb->escape_identifier( $wpdb->users ) . '.ID, ' . self::$author_ids[1] . ',' . self::$author_ids[0] . ',' . self::$author_ids[3] . ' )';
 		$this->assertStringContainsString( $expected_orderby, $q->query_orderby );
 
 		// assertEquals() respects order but ignores type (get_results() returns numeric strings).
@@ -421,7 +421,7 @@ class Tests_User_Query extends WP_UnitTestCase {
 			)
 		);
 
-		$expected_orderby = 'ORDER BY FIELD( ' . $wpdb->users . '.ID, ' . self::$author_ids[1] . ',' . self::$author_ids[0] . ',' . self::$author_ids[3] . ' )';
+		$expected_orderby = 'ORDER BY FIELD( ' . $wpdb->escape_identifier( $wpdb->users ) . '.ID, ' . self::$author_ids[1] . ',' . self::$author_ids[0] . ',' . self::$author_ids[3] . ' )';
 		$this->assertStringContainsString( $expected_orderby, $q->query_orderby );
 
 		// assertEquals() respects order but ignores type (get_results() returns numeric strings).

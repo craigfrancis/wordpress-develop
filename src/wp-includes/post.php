@@ -3032,13 +3032,13 @@ function wp_count_posts( $type = 'post', $perm = '' ) {
 		return apply_filters( 'wp_count_posts', $counts, $type, $perm );
 	}
 
-	$query = "SELECT post_status, COUNT( * ) AS num_posts FROM {$wpdb->posts} WHERE post_type = %s";
+	$query = 'SELECT post_status, COUNT( * ) AS num_posts FROM %i WHERE post_type = %s';
 
 	if ( 'readable' === $perm && is_user_logged_in() ) {
 		$post_type_object = get_post_type_object( $type );
 		if ( ! current_user_can( $post_type_object->cap->read_private_posts ) ) {
 			$query .= $wpdb->prepare(
-				" AND (post_status != 'private' OR ( post_author = %d AND post_status = 'private' ))",
+				' AND (post_status != "private" OR ( post_author = %d AND post_status = "private" ))',
 				get_current_user_id()
 			);
 		}
@@ -3046,7 +3046,7 @@ function wp_count_posts( $type = 'post', $perm = '' ) {
 
 	$query .= ' GROUP BY post_status';
 
-	$results = (array) $wpdb->get_results( $wpdb->prepare( $query, $type ), ARRAY_A );
+	$results = (array) $wpdb->get_results( $wpdb->prepare( $query, $wpdb->posts, $type ), ARRAY_A );
 	$counts  = array_fill_keys( get_post_stati(), 0 );
 
 	foreach ( $results as $row ) {
@@ -5039,8 +5039,8 @@ function wp_unique_post_slug( $slug, $post_ID, $post_status, $post_type, $post_p
 		 * Page slugs must be unique within their own trees. Pages are in a separate
 		 * namespace than posts so page slugs are allowed to overlap post slugs.
 		 */
-		$check_sql       = "SELECT post_name FROM $wpdb->posts WHERE post_name = %s AND post_type IN ( %s, 'attachment' ) AND ID != %d AND post_parent = %d LIMIT 1";
-		$post_name_check = $wpdb->get_var( $wpdb->prepare( $check_sql, $slug, $post_type, $post_ID, $post_parent ) );
+		$check_sql       = 'SELECT post_name FROM %i WHERE post_name = %s AND post_type IN ( %s, "attachment" ) AND ID != %d AND post_parent = %d LIMIT 1';
+		$post_name_check = $wpdb->get_var( $wpdb->prepare( $check_sql, $wpdb->posts, $slug, $post_type, $post_ID, $post_parent ) );
 
 		/**
 		 * Filters whether the post slug would make a bad hierarchical post slug.
@@ -5062,15 +5062,15 @@ function wp_unique_post_slug( $slug, $post_ID, $post_status, $post_type, $post_p
 			$suffix = 2;
 			do {
 				$alt_post_name   = _truncate_post_slug( $slug, 200 - ( strlen( $suffix ) + 1 ) ) . "-$suffix";
-				$post_name_check = $wpdb->get_var( $wpdb->prepare( $check_sql, $alt_post_name, $post_type, $post_ID, $post_parent ) );
+				$post_name_check = $wpdb->get_var( $wpdb->prepare( $check_sql, $wpdb->posts, $alt_post_name, $post_type, $post_ID, $post_parent ) );
 				$suffix++;
 			} while ( $post_name_check );
 			$slug = $alt_post_name;
 		}
 	} else {
 		// Post slugs must be unique across all posts.
-		$check_sql       = "SELECT post_name FROM $wpdb->posts WHERE post_name = %s AND post_type = %s AND ID != %d LIMIT 1";
-		$post_name_check = $wpdb->get_var( $wpdb->prepare( $check_sql, $slug, $post_type, $post_ID ) );
+		$check_sql       = 'SELECT post_name FROM %i WHERE post_name = %s AND post_type = %s AND ID != %d LIMIT 1';
+		$post_name_check = $wpdb->get_var( $wpdb->prepare( $check_sql, $wpdb->posts, $slug, $post_type, $post_ID ) );
 
 		$post = get_post( $post_ID );
 
@@ -5118,7 +5118,7 @@ function wp_unique_post_slug( $slug, $post_ID, $post_status, $post_type, $post_p
 			$suffix = 2;
 			do {
 				$alt_post_name   = _truncate_post_slug( $slug, 200 - ( strlen( $suffix ) + 1 ) ) . "-$suffix";
-				$post_name_check = $wpdb->get_var( $wpdb->prepare( $check_sql, $alt_post_name, $post_type, $post_ID ) );
+				$post_name_check = $wpdb->get_var( $wpdb->prepare( $check_sql, $wpdb->posts, $alt_post_name, $post_type, $post_ID ) );
 				$suffix++;
 			} while ( $post_name_check );
 			$slug = $alt_post_name;
@@ -5689,9 +5689,9 @@ function get_page_by_path( $page_path, $output = OBJECT, $post_type = 'page' ) {
 
 	$post_types          = esc_sql( $post_types );
 	$post_type_in_string = "'" . implode( "','", $post_types ) . "'";
-	$sql                 = "
-		SELECT ID, post_name, post_parent, post_type
-		FROM $wpdb->posts
+
+	$sql =
+		$wpdb->prepare ( 'SELECT ID, post_name, post_parent, post_type FROM %i ', $wpdb->posts ) . "
 		WHERE post_name IN ($in_string)
 		AND post_type IN ($post_type_in_string)
 	";
@@ -6157,33 +6157,33 @@ function get_pages( $args = array() ) {
 			case 'menu_order':
 				break;
 			case 'ID':
-				$orderby = "$wpdb->posts.ID";
+				$orderby = $wpdb->escape_identifier( $wpdb->posts ) . '.ID';
 				break;
 			case 'rand':
 				$orderby = 'RAND()';
 				break;
 			case 'comment_count':
-				$orderby = "$wpdb->posts.comment_count";
+				$orderby = $wpdb->escape_identifier( $wpdb->posts ) . '.comment_count';
 				break;
 			default:
 				if ( 0 === strpos( $orderby, 'post_' ) ) {
-					$orderby = "$wpdb->posts." . $orderby;
+					$orderby = $wpdb->escape_identifier( $wpdb->posts ) . '.' . $orderby;
 				} else {
-					$orderby = "$wpdb->posts.post_" . $orderby;
+					$orderby = $wpdb->escape_identifier( $wpdb->posts ) . '.' . $wpdb->escape_identifier('post_' . $orderby);
 				}
 		}
 
 		$orderby_array[] = $orderby;
 
 	}
-	$sort_column = ! empty( $orderby_array ) ? implode( ',', $orderby_array ) : "$wpdb->posts.post_title";
+	$sort_column = ! empty( $orderby_array ) ? implode( ',', $orderby_array ) : $wpdb->escape_identifier( $wpdb->posts ) . '.post_title';
 
 	$sort_order = strtoupper( $parsed_args['sort_order'] );
 	if ( '' !== $sort_order && ! in_array( $sort_order, array( 'ASC', 'DESC' ), true ) ) {
 		$sort_order = 'ASC';
 	}
 
-	$query  = "SELECT * FROM $wpdb->posts $join WHERE ($where_post_type) $where ";
+	$query  = 'SELECT * FROM ' . $wpdb->escape_identifier( $wpdb->posts ) . " $join WHERE ($where_post_type) $where ";
 	$query .= $author_query;
 	$query .= ' ORDER BY ' . $sort_column . ' ' . $sort_order;
 
@@ -6352,8 +6352,8 @@ function wp_insert_attachment( $args, $file = false, $parent = 0, $wp_error = fa
  */
 function wp_delete_attachment( $post_id, $force_delete = false ) {
 	global $wpdb;
-
-	$post = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $wpdb->posts WHERE ID = %d", $post_id ) );
+// exit('TODO TEST wp_delete_attachment');
+	$post = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE ID = %d', $wpdb->posts, $post_id ) );
 
 	if ( ! $post ) {
 		return $post;
@@ -6462,7 +6462,7 @@ function wp_delete_attachment_files( $post_id, $meta, $backup_sizes, $file ) {
 
 	if ( ! empty( $meta['thumb'] ) ) {
 		// Don't delete the thumb if another attachment uses it.
-		if ( ! $wpdb->get_row( $wpdb->prepare( "SELECT meta_id FROM $wpdb->postmeta WHERE meta_key = '_wp_attachment_metadata' AND meta_value LIKE %s AND post_id <> %d", '%' . $wpdb->esc_like( $meta['thumb'] ) . '%', $post_id ) ) ) {
+		if ( ! $wpdb->get_row( $wpdb->prepare( 'SELECT meta_id FROM %i WHERE meta_key = "_wp_attachment_metadata" AND meta_value LIKE %s AND post_id <> %d', $wpdb->postmeta, '%' . $wpdb->esc_like( $meta['thumb'] ) . '%', $post_id ) ) ) {
 			$thumbfile = str_replace( wp_basename( $file ), $meta['thumb'], $file );
 
 			if ( ! empty( $thumbfile ) ) {
@@ -7830,7 +7830,7 @@ function wp_delete_auto_drafts() {
 	global $wpdb;
 
 	// Cleanup old auto-drafts more than 7 days old.
-	$old_posts = $wpdb->get_col( "SELECT ID FROM $wpdb->posts WHERE post_status = 'auto-draft' AND DATE_SUB( NOW(), INTERVAL 7 DAY ) > post_date" );
+	$old_posts = $wpdb->get_col( $wpdb->prepare( 'SELECT ID FROM %i WHERE post_status = "auto-draft" AND DATE_SUB( NOW(), INTERVAL 7 DAY ) > post_date', $wpdb->posts ) );
 	foreach ( (array) $old_posts as $delete ) {
 		// Force delete.
 		wp_delete_post( $delete, true );
@@ -7915,7 +7915,7 @@ function _prime_post_caches( $ids, $update_term_cache = true, $update_meta_cache
 
 	$non_cached_ids = _get_non_cached_ids( $ids, 'posts' );
 	if ( ! empty( $non_cached_ids ) ) {
-		$fresh_posts = $wpdb->get_results( sprintf( "SELECT $wpdb->posts.* FROM $wpdb->posts WHERE ID IN (%s)", implode( ',', $non_cached_ids ) ) );
+		$fresh_posts = $wpdb->get_results( $wpdb->prepare( 'SELECT %i.* FROM %i WHERE ', $wpdb->posts, $wpdb->posts ) . sprintf( 'ID IN (%s)', implode( ',', array_map( 'intval', $non_cached_ids ) ) ) );
 
 		update_post_caches( $fresh_posts, 'any', $update_term_cache, $update_meta_cache );
 	}
@@ -7999,12 +7999,12 @@ function _filter_query_attachment_filenames( $clauses ) {
 	remove_filter( 'posts_clauses', __FUNCTION__ );
 
 	// Add a LEFT JOIN of the postmeta table so we don't trample existing JOINs.
-	$clauses['join'] .= " LEFT JOIN {$wpdb->postmeta} AS sq1 ON ( {$wpdb->posts}.ID = sq1.post_id AND sq1.meta_key = '_wp_attached_file' )";
+	$clauses['join'] .= ' LEFT JOIN ' . $wpdb->escape_identifier( $wpdb->postmeta ) . ' AS sq1 ON ( ' . $wpdb->escape_identifier( $wpdb->posts ) . '.ID = sq1.post_id AND sq1.meta_key = "_wp_attached_file" )';
 
-	$clauses['groupby'] = "{$wpdb->posts}.ID";
+	$clauses['groupby'] = $wpdb->escape_identifier( $wpdb->posts ) . '.ID';
 
 	$clauses['where'] = preg_replace(
-		"/\({$wpdb->posts}.post_content (NOT LIKE|LIKE) (\'[^']+\')\)/",
+		"/\(" . $wpdb->escape_identifier( $wpdb->posts ) . ".post_content (NOT LIKE|LIKE) (\'[^']+\')\)/",
 		'$0 OR ( sq1.meta_value $1 $2 )',
 		$clauses['where']
 	);

@@ -1050,10 +1050,10 @@ class Tests_Query_Results extends WP_UnitTestCase {
 		);
 		$this->assertTrue( $this->q->have_posts() );
 		$this->assertStringContainsString(
-			"(({$wpdb->posts}.post_status = 'publish') OR ({$wpdb->posts}.post_author = 0 AND ({$wpdb->posts}.post_status = 'private')))",
+			'((' . $wpdb->escape_identifier( $wpdb->posts ) . ".post_status = 'publish') OR (" . $wpdb->escape_identifier( $wpdb->posts ) . '.post_author = 0 AND (' . $wpdb->escape_identifier( $wpdb->posts ) . ".post_status = 'private')))",
 			$this->q->request
 		);
-		$this->assertStringNotContainsString( "({$wpdb->posts}.post_status = 'publish') AND", $this->q->request );
+		$this->assertStringNotContainsString( '(' . $wpdb->escape_identifier( $wpdb->posts ) . ".post_status = 'publish') AND", $this->q->request );
 	}
 
 	/**

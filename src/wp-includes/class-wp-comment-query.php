@@ -595,7 +595,7 @@ class WP_Comment_Query {
 					// Otherwise we match against email addresses.
 					if ( ! empty( $_GET['unapproved'] ) && ! empty( $_GET['moderation-hash'] ) ) {
 						// Only include requested comment.
-						$approved_clauses[] = $wpdb->prepare( "( comment_author_email = %s AND comment_approved = '0' AND {$wpdb->comments}.comment_ID = %d )", $unapproved_identifier, (int) $_GET['unapproved'] );
+						$approved_clauses[] = $wpdb->prepare( "( comment_author_email = %s AND comment_approved = '0' AND %i.comment_ID = %d )", $unapproved_identifier, $wpdb->comments, (int) $_GET['unapproved'] );
 					} else {
 						// Include all of the author's unapproved comments.
 						$approved_clauses[] = $wpdb->prepare( "( comment_author_email = %s AND comment_approved = '0' )", $unapproved_identifier );
@@ -658,7 +658,7 @@ class WP_Comment_Query {
 
 			// If no valid clauses were found, order by comment_date_gmt.
 			if ( empty( $orderby_array ) ) {
-				$orderby_array[] = "$wpdb->comments.comment_date_gmt $order";
+				$orderby_array[] = $wpdb->escape_identifier( $wpdb->comments ) . ".comment_date_gmt $order";
 			}
 
 			// To ensure determinate sorting, always include a comment_ID clause.
@@ -691,12 +691,12 @@ class WP_Comment_Query {
 					$comment_id_order = 'DESC';
 				}
 
-				$orderby_array[] = "$wpdb->comments.comment_ID $comment_id_order";
+				$orderby_array[] = $wpdb->escape_identifier( $wpdb->comments ) . ".comment_ID $comment_id_order";
 			}
 
 			$orderby = implode( ', ', $orderby_array );
 		} else {
-			$orderby = "$wpdb->comments.comment_date_gmt $order";
+			$orderby = $wpdb->escape_identifier( $wpdb->comments ) . ".comment_date_gmt $order";
 		}
 
 		$number = absint( $this->query_vars['number'] );
@@ -715,7 +715,7 @@ class WP_Comment_Query {
 		if ( $this->query_vars['count'] ) {
 			$fields = 'COUNT(*)';
 		} else {
-			$fields = "$wpdb->comments.comment_ID";
+			$fields = $wpdb->escape_identifier( $wpdb->comments ) . '.comment_ID';
 		}
 
 		$post_id = absint( $this->query_vars['post_id'] );
@@ -725,12 +725,12 @@ class WP_Comment_Query {
 
 		// Parse comment IDs for an IN clause.
 		if ( ! empty( $this->query_vars['comment__in'] ) ) {
-			$this->sql_clauses['where']['comment__in'] = "$wpdb->comments.comment_ID IN ( " . implode( ',', wp_parse_id_list( $this->query_vars['comment__in'] ) ) . ' )';
+			$this->sql_clauses['where']['comment__in'] = $wpdb->escape_identifier( $wpdb->comments ) . '.comment_ID IN ( ' . implode( ',', wp_parse_id_list( $this->query_vars['comment__in'] ) ) . ' )';
 		}
 
 		// Parse comment IDs for a NOT IN clause.
 		if ( ! empty( $this->query_vars['comment__not_in'] ) ) {
-			$this->sql_clauses['where']['comment__not_in'] = "$wpdb->comments.comment_ID NOT IN ( " . implode( ',', wp_parse_id_list( $this->query_vars['comment__not_in'] ) ) . ' )';
+			$this->sql_clauses['where']['comment__not_in'] = $wpdb->escape_identifier( $wpdb->comments ) . '.comment_ID NOT IN ( ' . implode( ',', wp_parse_id_list( $this->query_vars['comment__not_in'] ) ) . ' )';
 		}
 
 		// Parse comment parent IDs for an IN clause.
@@ -843,7 +843,8 @@ class WP_Comment_Query {
 				$esses = array_fill( 0, count( (array) $field_value ), '%s' );
 
 				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-				$this->sql_clauses['where'][ $field_name ] = $wpdb->prepare( " {$wpdb->posts}.{$field_name} IN (" . implode( ',', $esses ) . ')', $field_value );
+// exit('TODO Use %i not escape_identifier() 2');
+				$this->sql_clauses['where'][ $field_name ] = $wpdb->prepare( $wpdb->escape_identifier( $wpdb->posts ) . ".{$field_name} IN (" . implode( ',', $esses ) . ')', $field_value );
 			}
 		}
 
@@ -866,7 +867,7 @@ class WP_Comment_Query {
 				$esses = array_fill( 0, count( $q_values ), '%s' );
 
 				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-				$this->sql_clauses['where'][ $field_name ] = $wpdb->prepare( " {$wpdb->posts}.{$field_name} IN (" . implode( ',', $esses ) . ')', $q_values );
+				$this->sql_clauses['where'][ $field_name ] = $wpdb->prepare( '%i.%i IN (' . implode( ',', $esses ) . ')', array_merge( array( $wpdb->posts, $field_name ), $q_values ) );
 			}
 		}
 
@@ -896,7 +897,7 @@ class WP_Comment_Query {
 		$groupby = '';
 
 		if ( $join_posts_table ) {
-			$join .= "JOIN $wpdb->posts ON $wpdb->posts.ID = $wpdb->comments.comment_post_ID";
+			$join .= 'JOIN ' . $wpdb->escape_identifier( $wpdb->posts ) . ' ON ' . $wpdb->escape_identifier( $wpdb->posts ) . '.ID = ' . $wpdb->escape_identifier( $wpdb->comments ) . '.comment_post_ID';
 		}
 
 		if ( ! empty( $this->meta_query_clauses ) ) {
@@ -906,7 +907,7 @@ class WP_Comment_Query {
 			$this->sql_clauses['where']['meta_query'] = preg_replace( '/^\s*AND\s*/', '', $this->meta_query_clauses['where'] );
 
 			if ( ! $this->query_vars['count'] ) {
-				$groupby = "{$wpdb->comments}.comment_ID";
+				$groupby = $wpdb->escape_identifier( $wpdb->comments ) . '.comment_ID';
 			}
 		}
 
@@ -949,7 +950,7 @@ class WP_Comment_Query {
 		}
 
 		if ( $orderby ) {
-			$orderby = "ORDER BY $orderby";
+			$orderby = 'ORDER BY ' . $orderby;
 		}
 
 		$found_rows = '';
@@ -958,7 +959,7 @@ class WP_Comment_Query {
 		}
 
 		$this->sql_clauses['select']  = "SELECT $found_rows $fields";
-		$this->sql_clauses['from']    = "FROM $wpdb->comments $join";
+		$this->sql_clauses['from']    = 'FROM ' . $wpdb->escape_identifier( $wpdb->comments ) . " $join";
 		$this->sql_clauses['groupby'] = $groupby;
 		$this->sql_clauses['orderby'] = $orderby;
 		$this->sql_clauses['limits']  = $limits;
@@ -1200,14 +1201,14 @@ class WP_Comment_Query {
 			$parsed = "$wpdb->commentmeta.meta_value+0";
 		} elseif ( 'comment__in' === $orderby ) {
 			$comment__in = implode( ',', array_map( 'absint', $this->query_vars['comment__in'] ) );
-			$parsed      = "FIELD( {$wpdb->comments}.comment_ID, $comment__in )";
+			$parsed      = 'FIELD( ' . $wpdb->escape_identifier( $wpdb->comments ) . ".comment_ID, $comment__in )";
 		} elseif ( in_array( $orderby, $allowed_keys, true ) ) {
 
 			if ( isset( $meta_query_clauses[ $orderby ] ) ) {
 				$meta_clause = $meta_query_clauses[ $orderby ];
 				$parsed      = sprintf( 'CAST(%s.meta_value AS %s)', esc_sql( $meta_clause['alias'] ), esc_sql( $meta_clause['cast'] ) );
 			} else {
-				$parsed = "$wpdb->comments.$orderby";
+				$parsed = $wpdb->escape_identifier( $wpdb->comments ) . '.' . $orderby;
 			}
 		}
 

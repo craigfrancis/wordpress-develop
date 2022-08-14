@@ -918,7 +918,7 @@ function wp_is_site_initialized( $site_id ) {
 	}
 
 	$suppress = $wpdb->suppress_errors();
-	$result   = (bool) $wpdb->get_results( "DESCRIBE {$wpdb->posts}" );
+	$result   = (bool) $wpdb->get_results( $wpdb->prepare( 'DESCRIBE %i', $wpdb->posts ) );
 	$wpdb->suppress_errors( $suppress );
 
 	if ( $switch ) {

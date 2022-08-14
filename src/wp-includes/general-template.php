@@ -2045,7 +2045,7 @@ function wp_get_archives( $args = '' ) {
 	$limit = $parsed_args['limit'];
 
 	if ( 'monthly' === $parsed_args['type'] ) {
-		$query   = "SELECT YEAR(post_date) AS `year`, MONTH(post_date) AS `month`, count(ID) as posts FROM $wpdb->posts $join $where GROUP BY YEAR(post_date), MONTH(post_date) ORDER BY post_date $order $limit";
+		$query   = 'SELECT YEAR(post_date) AS `year`, MONTH(post_date) AS `month`, count(ID) as posts FROM ' . $wpdb->escape_identifier( $wpdb->posts ) . " $join $where GROUP BY YEAR(post_date), MONTH(post_date) ORDER BY post_date $order $limit";
 		$key     = md5( $query );
 		$key     = "wp_get_archives:$key:$last_changed";
 		$results = wp_cache_get( $key, 'posts' );

@@ -2024,12 +2024,14 @@ function upgrade_430_fix_comments() {
 
 	$allowed_length = (int) $content_length['length'] - 10;
 
-	$comments = $wpdb->get_results(
-		"SELECT `comment_ID` FROM `{$wpdb->comments}`
-			WHERE `comment_date_gmt` > '2015-04-26'
-			AND LENGTH( `comment_content` ) >= {$allowed_length}
-			AND ( `comment_content` LIKE '%<%' OR `comment_content` LIKE '%>%' )"
-	);
+	$comments = $wpdb->get_results( $wpdb->prepare(
+		'SELECT `comment_ID` FROM %i
+			WHERE `comment_date_gmt` > "2015-04-26"
+			AND LENGTH( `comment_content` ) >= %d
+			AND ( `comment_content` LIKE "%<%" OR `comment_content` LIKE "%>%" )',
+		$wpdb->comments,
+		$allowed_length,
+	) );
 
 	foreach ( $comments as $comment ) {
 		wp_delete_comment( $comment->comment_ID, true );
@@ -2064,7 +2066,7 @@ function upgrade_440() {
 	global $wp_current_db_version, $wpdb;
 
 	if ( $wp_current_db_version < 34030 ) {
-		$wpdb->query( "ALTER TABLE {$wpdb->options} MODIFY option_name VARCHAR(191)" );
+		$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i MODIFY option_name VARCHAR(191)', $wpdb->options ) );
 	}
 
 	// Remove the unused 'add_users' role.
@@ -2334,7 +2336,7 @@ function upgrade_network() {
 		delete_site_option( 'deactivated_sitewide_plugins' );
 
 		$start = 0;
-		while ( $rows = $wpdb->get_results( "SELECT meta_key, meta_value FROM {$wpdb->sitemeta} ORDER BY meta_id LIMIT $start, 20" ) ) {
+		while ( $rows = $wpdb->get_results( $wpdb->prepare( 'SELECT meta_key, meta_value FROM %i ORDER BY meta_id LIMIT %d, 20', $wpdb->sitemeta, $start ) ) ) {
 			foreach ( $rows as $row ) {
 				$value = $row->meta_value;
 				if ( ! @unserialize( $value ) ) {
@@ -2752,14 +2754,14 @@ function dbDelta( $queries = '', $execute = true ) { // phpcs:ignore WordPress.N
 
 	// Create a tablename index for an array ($cqueries) of queries.
 	foreach ( $queries as $qry ) {
-		if ( preg_match( '|CREATE TABLE ([^ ]*)|', $qry, $matches ) ) {
+		if ( preg_match( '/CREATE TABLE (`[^`]+`|[^ ]*)/', $qry, $matches ) ) {
 			$cqueries[ trim( $matches[1], '`' ) ] = $qry;
 			$for_update[ $matches[1] ]            = 'Created table ' . $matches[1];
-		} elseif ( preg_match( '|CREATE DATABASE ([^ ]*)|', $qry, $matches ) ) {
+		} elseif ( preg_match( '/CREATE DATABASE (`[^`]+`|[^ ]*)/', $qry, $matches ) ) {
 			array_unshift( $cqueries, $qry );
-		} elseif ( preg_match( '|INSERT INTO ([^ ]*)|', $qry, $matches ) ) {
+		} elseif ( preg_match( '/INSERT INTO (`[^`]+`|[^ ]*)/', $qry, $matches ) ) {
 			$iqueries[] = $qry;
-		} elseif ( preg_match( '|UPDATE ([^ ]*)|', $qry, $matches ) ) {
+		} elseif ( preg_match( '/UPDATE (`[^`]+`|[^ ]*)/', $qry, $matches ) ) {
 			$iqueries[] = $qry;
 		} else {
 			// Unrecognized query type.

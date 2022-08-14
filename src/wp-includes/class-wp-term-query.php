@@ -697,10 +697,10 @@ class WP_Term_Query {
 		 */
 		$fields = implode( ', ', apply_filters( 'get_terms_fields', $selects, $args, $taxonomies ) );
 
-		$join .= " INNER JOIN $wpdb->term_taxonomy AS tt ON t.term_id = tt.term_id";
+		$join .= ' INNER JOIN ' . $wpdb->escape_identifier( $wpdb->term_taxonomy ) . ' AS tt ON t.term_id = tt.term_id';
 
 		if ( ! empty( $this->query_vars['object_ids'] ) ) {
-			$join    .= " INNER JOIN {$wpdb->term_relationships} AS tr ON tr.term_taxonomy_id = tt.term_taxonomy_id";
+			$join    .= ' INNER JOIN ' . $wpdb->escape_identifier( $wpdb->term_relationships ) . ' AS tr ON tr.term_taxonomy_id = tt.term_taxonomy_id';
 			$distinct = 'DISTINCT';
 		}
 
@@ -742,7 +742,7 @@ class WP_Term_Query {
 		}
 
 		$this->sql_clauses['select']  = "SELECT $distinct $fields";
-		$this->sql_clauses['from']    = "FROM $wpdb->terms AS t $join";
+		$this->sql_clauses['from']    = 'FROM ' . $wpdb->escape_identifier( $wpdb->terms ) . " AS t $join";
 		$this->sql_clauses['orderby'] = $orderby ? "$orderby $order" : '';
 		$this->sql_clauses['limits']  = $limits;
 

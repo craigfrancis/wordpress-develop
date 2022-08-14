@@ -910,10 +910,11 @@ function parent_dropdown( $default_page = 0, $parent_page = 0, $level = 0, $post
 	$post  = get_post( $post );
 	$items = $wpdb->get_results(
 		$wpdb->prepare(
-			"SELECT ID, post_parent, post_title
-			FROM $wpdb->posts
-			WHERE post_parent = %d AND post_type = 'page'
-			ORDER BY menu_order",
+			'SELECT ID, post_parent, post_title
+			FROM %i
+			WHERE post_parent = %d AND post_type = "page"
+			ORDER BY menu_order',
+			$wpdb->posts,
 			$parent_page
 		)
 	);

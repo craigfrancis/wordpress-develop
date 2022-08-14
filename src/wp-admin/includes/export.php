@@ -103,46 +103,46 @@ function export_wp( $args = array() ) {
 			$args['content'] = 'post';
 		}
 
-		$where = $wpdb->prepare( "{$wpdb->posts}.post_type = %s", $args['content'] );
+		$where = $wpdb->prepare( '%i.post_type = %s', $wpdb->posts, $args['content'] );
 	} else {
 		$post_types = get_post_types( array( 'can_export' => true ) );
 		$esses      = array_fill( 0, count( $post_types ), '%s' );
 
 		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-		$where = $wpdb->prepare( "{$wpdb->posts}.post_type IN (" . implode( ',', $esses ) . ')', $post_types );
+		$where = $wpdb->prepare( '%i.post_type IN (' . implode( ',', $esses ) . ')', array_merge( array( $wpdb->posts ) , $post_types ) );
 	}
 
 	if ( $args['status'] && ( 'post' === $args['content'] || 'page' === $args['content'] ) ) {
-		$where .= $wpdb->prepare( " AND {$wpdb->posts}.post_status = %s", $args['status'] );
+		$where .= $wpdb->prepare( ' AND %i.post_status = %s', $wpdb->posts, $args['status'] );
 	} else {
-		$where .= " AND {$wpdb->posts}.post_status != 'auto-draft'";
+		$where .= $wpdb->prepare( ' AND %i.post_status != "auto-draft"', $wpdb->posts );
 	}
 
 	$join = '';
 	if ( $args['category'] && 'post' === $args['content'] ) {
 		$term = term_exists( $args['category'], 'category' );
 		if ( $term ) {
-			$join   = "INNER JOIN {$wpdb->term_relationships} ON ({$wpdb->posts}.ID = {$wpdb->term_relationships}.object_id)";
-			$where .= $wpdb->prepare( " AND {$wpdb->term_relationships}.term_taxonomy_id = %d", $term['term_taxonomy_id'] );
+			$join   = $wpdb->prepare( ' INNER JOIN %i ON (%i.ID = %i.object_id)', $wpdb->term_relationships, $wpdb->posts, $wpdb->term_relationships );
+			$where .= $wpdb->prepare( ' AND %i.term_taxonomy_id = %d', $wpdb->term_relationships, $term['term_taxonomy_id'] );
 		}
 	}
 
 	if ( in_array( $args['content'], array( 'post', 'page', 'attachment' ), true ) ) {
 		if ( $args['author'] ) {
-			$where .= $wpdb->prepare( " AND {$wpdb->posts}.post_author = %d", $args['author'] );
+			$where .= $wpdb->prepare( ' AND %i.post_author = %d', $wpdb->posts, $args['author'] );
 		}
 
 		if ( $args['start_date'] ) {
-			$where .= $wpdb->prepare( " AND {$wpdb->posts}.post_date >= %s", gmdate( 'Y-m-d', strtotime( $args['start_date'] ) ) );
+			$where .= $wpdb->prepare( ' AND %i.post_date >= %s', $wpdb->posts, gmdate( 'Y-m-d', strtotime( $args['start_date'] ) ) );
 		}
 
 		if ( $args['end_date'] ) {
-			$where .= $wpdb->prepare( " AND {$wpdb->posts}.post_date < %s", gmdate( 'Y-m-d', strtotime( '+1 month', strtotime( $args['end_date'] ) ) ) );
+			$where .= $wpdb->prepare( ' AND %i.post_date < %s', $wpdb->posts, gmdate( 'Y-m-d', strtotime( '+1 month', strtotime( $args['end_date'] ) ) ) );
 		}
 	}
 
 	// Grab a snapshot of post IDs, just in case it changes during the export.
-	$post_ids = $wpdb->get_col( "SELECT ID FROM {$wpdb->posts} $join WHERE $where" );
+	$post_ids = $wpdb->get_col( $wpdb->prepare( 'SELECT ID FROM %i', $wpdb->posts ) . $join . ' WHERE ' . $where );
 
 	/*
 	 * Get the requested terms ready, empty unless posts filtered by category
@@ -358,13 +358,13 @@ function export_wp( $args = array() ) {
 
 		if ( ! empty( $post_ids ) ) {
 			$post_ids = array_map( 'absint', $post_ids );
-			$and      = 'AND ID IN ( ' . implode( ', ', $post_ids ) . ')';
+			$and      = ' AND ID IN ( ' . implode( ', ', $post_ids ) . ')';
 		} else {
 			$and = '';
 		}
 
 		$authors = array();
-		$results = $wpdb->get_results( "SELECT DISTINCT post_author FROM $wpdb->posts WHERE post_status != 'auto-draft' $and" );
+		$results = $wpdb->get_results( $wpdb->prepare( 'SELECT DISTINCT post_author FROM %i WHERE post_status != "auto-draft"', $wpdb->posts ) . $and );
 		foreach ( (array) $results as $result ) {
 			$authors[] = get_userdata( $result->post_author );
 		}
@@ -535,8 +535,8 @@ function export_wp( $args = array() ) {
 
 		// Fetch 20 posts at a time rather than loading the entire table into memory.
 		while ( $next_posts = array_splice( $post_ids, 0, 20 ) ) {
-			$where = 'WHERE ID IN (' . implode( ',', $next_posts ) . ')';
-			$posts = $wpdb->get_results( "SELECT * FROM {$wpdb->posts} $where" );
+			$where = ' WHERE ID IN (' . implode( ',', $next_posts ) . ')';
+			$posts = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i', $wpdb->posts ) . $where );
 
 			// Begin Loop.
 			foreach ( $posts as $post ) {

@@ -592,20 +592,20 @@ class WP_Meta_Query {
 
 			// JOIN clauses for NOT EXISTS have their own syntax.
 			if ( 'NOT EXISTS' === $meta_compare ) {
-				$join .= " LEFT JOIN $this->meta_table";
-				$join .= $i ? " AS $alias" : '';
+				$join .= ' LEFT JOIN ' . $wpdb->escape_identifier( $this->meta_table );
+				$join .= $i ? ' AS ' . $wpdb->escape_identifier( $alias ) : '';
 
 				if ( 'LIKE' === $meta_compare_key ) {
-					$join .= $wpdb->prepare( " ON ( $this->primary_table.$this->primary_id_column = $alias.$this->meta_id_column AND $alias.meta_key LIKE %s )", '%' . $wpdb->esc_like( $clause['key'] ) . '%' );
+					$join .= $wpdb->prepare( ' ON ( %i.%i = %i.%i AND %i.meta_key LIKE %s )', $this->primary_table, $this->primary_id_column, $alias, $this->meta_id_column, $alias, '%' . $wpdb->esc_like( $clause['key'] ) . '%' );
 				} else {
-					$join .= $wpdb->prepare( " ON ( $this->primary_table.$this->primary_id_column = $alias.$this->meta_id_column AND $alias.meta_key = %s )", $clause['key'] );
+					$join .= $wpdb->prepare( ' ON ( %i.%i = %i.%i AND %i.meta_key = %s )', $this->primary_table, $this->primary_id_column, $alias, $this->meta_id_column, $alias, $clause['key'] );
 				}
 
 				// All other JOIN clauses.
 			} else {
-				$join .= " INNER JOIN $this->meta_table";
-				$join .= $i ? " AS $alias" : '';
-				$join .= " ON ( $this->primary_table.$this->primary_id_column = $alias.$this->meta_id_column )";
+				$join .= ' INNER JOIN ' . $wpdb->escape_identifier( $this->meta_table );
+				$join .= $i ? ' AS ' . $wpdb->escape_identifier( $alias ) : '';
+				$join .= ' ON ( ' . $wpdb->escape_identifier( $this->primary_table ) . '.' . $wpdb->escape_identifier( $this->primary_id_column ) . ' = ' . $wpdb->escape_identifier( $alias ) . '.' . $wpdb->escape_identifier( $this->meta_id_column ) . ' )';
 			}
 
 			$this->table_aliases[] = $alias;
@@ -641,7 +641,7 @@ class WP_Meta_Query {
 		// meta_key.
 		if ( array_key_exists( 'key', $clause ) ) {
 			if ( 'NOT EXISTS' === $meta_compare ) {
-				$sql_chunks['where'][] = $alias . '.' . $this->meta_id_column . ' IS NULL';
+				$sql_chunks['where'][] = $wpdb->escape_identifier( $alias ) . '.' . $wpdb->escape_identifier( $this->meta_id_column ) . ' IS NULL';
 			} else {
 				/**
 				 * In joined clauses negative operators have to be nested into a
@@ -657,7 +657,7 @@ class WP_Meta_Query {
 
 					$meta_compare_string_start  = 'NOT EXISTS (';
 					$meta_compare_string_start .= "SELECT 1 FROM $wpdb->postmeta $subquery_alias ";
-					$meta_compare_string_start .= "WHERE $subquery_alias.post_ID = $alias.post_ID ";
+					$meta_compare_string_start .= "WHERE $subquery_alias.post_ID = " . $wpdb->escape_identifier( $alias ) . '.post_ID ';
 					$meta_compare_string_end    = 'LIMIT 1';
 					$meta_compare_string_end   .= ')';
 				}
@@ -665,7 +665,7 @@ class WP_Meta_Query {
 				switch ( $meta_compare_key ) {
 					case '=':
 					case 'EXISTS':
-						$where = $wpdb->prepare( "$alias.meta_key = %s", trim( $clause['key'] ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+						$where = $wpdb->prepare( '%i.meta_key = %s', $alias, trim( $clause['key'] ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 						break;
 					case 'LIKE':
 						$meta_compare_value = '%' . $wpdb->esc_like( trim( $clause['key'] ) ) . '%';
@@ -768,9 +768,9 @@ class WP_Meta_Query {
 
 			if ( $where ) {
 				if ( 'CHAR' === $meta_type ) {
-					$sql_chunks['where'][] = "$alias.meta_value {$meta_compare} {$where}";
+					$sql_chunks['where'][] = $wpdb->escape_identifier( $alias ) . ".meta_value {$meta_compare} {$where}";
 				} else {
-					$sql_chunks['where'][] = "CAST($alias.meta_value AS {$meta_type}) {$meta_compare} {$where}";
+					$sql_chunks['where'][] = 'CAST(' . $wpdb->escape_identifier( $alias ) . ".meta_value AS {$meta_type}) {$meta_compare} {$where}";
 				}
 			}
 		}
@@ -849,6 +849,8 @@ class WP_Meta_Query {
 			$sibling_compare = strtoupper( $sibling['compare'] );
 			if ( in_array( $clause_compare, $compatible_compares, true ) && in_array( $sibling_compare, $compatible_compares, true ) ) {
 				$alias = preg_replace( '/\W/', '_', $sibling['alias'] );
+// TODO: Why?
+$alias = $sibling['alias'];
 				break;
 			}
 		}

@@ -343,7 +343,7 @@ class Tests_Post_Query extends WP_UnitTestCase {
 			)
 		);
 		$this->assertStringContainsString(
-			"ORDER BY $wpdb->posts.post_type DESC, $wpdb->posts.post_name ASC",
+			'ORDER BY ' . $wpdb->escape_identifier( $wpdb->posts ) . '.post_type DESC, ' . $wpdb->escape_identifier( $wpdb->posts ) . '.post_name ASC',
 			$q1->request
 		);
 
@@ -353,13 +353,13 @@ class Tests_Post_Query extends WP_UnitTestCase {
 
 		$q3 = new WP_Query( array( 'post_type' => 'post' ) );
 		$this->assertStringContainsString(
-			"ORDER BY $wpdb->posts.post_date DESC",
+			'ORDER BY ' . $wpdb->escape_identifier( $wpdb->posts ) . '.post_date DESC',
 			$q3->request
 		);
 
 		$q4 = new WP_Query( array( 'post_type' => 'post' ) );
 		$this->assertStringContainsString(
-			"ORDER BY $wpdb->posts.post_date DESC",
+			'ORDER BY ' . $wpdb->escape_identifier( $wpdb->posts ) . '.post_date DESC',
 			$q4->request
 		);
 	}
@@ -378,7 +378,7 @@ class Tests_Post_Query extends WP_UnitTestCase {
 			)
 		);
 		$this->assertStringContainsString(
-			"ORDER BY $wpdb->posts.post_type DESC",
+			'ORDER BY ' . $wpdb->escape_identifier( $wpdb->posts ) . '.post_type DESC',
 			$q1->request
 		);
 
@@ -389,7 +389,7 @@ class Tests_Post_Query extends WP_UnitTestCase {
 			)
 		);
 		$this->assertStringContainsString(
-			"ORDER BY $wpdb->posts.post_title DESC",
+			'ORDER BY ' . $wpdb->escape_identifier( $wpdb->posts ) . '.post_title DESC',
 			$q2->request
 		);
 
@@ -399,7 +399,7 @@ class Tests_Post_Query extends WP_UnitTestCase {
 			)
 		);
 		$this->assertStringContainsString(
-			"ORDER BY $wpdb->posts.post_date ASC",
+			'ORDER BY ' . $wpdb->escape_identifier( $wpdb->posts ) . '.post_date ASC',
 			$q3->request
 		);
 	}

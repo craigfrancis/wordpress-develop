@@ -285,9 +285,9 @@ function wp_load_alloptions( $force_cache = false ) {
 
 	if ( ! $alloptions ) {
 		$suppress      = $wpdb->suppress_errors();
-		$alloptions_db = $wpdb->get_results( "SELECT option_name, option_value FROM $wpdb->options WHERE autoload = 'yes'" );
+		$alloptions_db = $wpdb->get_results( $wpdb->prepare( 'SELECT option_name, option_value FROM %i WHERE autoload = "yes"', $wpdb->options ) );
 		if ( ! $alloptions_db ) {
-			$alloptions_db = $wpdb->get_results( "SELECT option_name, option_value FROM $wpdb->options" );
+			$alloptions_db = $wpdb->get_results( $wpdb->prepare( 'SELECT option_name, option_value FROM %i', $wpdb->options ) );
 		}
 		$wpdb->suppress_errors( $suppress );
 
@@ -637,7 +637,9 @@ function add_option( $option, $value = '', $deprecated = '', $autoload = 'yes' )
 	 */
 	do_action( 'add_option', $option, $value );
 
-	$result = $wpdb->query( $wpdb->prepare( "INSERT INTO `$wpdb->options` (`option_name`, `option_value`, `autoload`) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE `option_name` = VALUES(`option_name`), `option_value` = VALUES(`option_value`), `autoload` = VALUES(`autoload`)", $option, $serialized_value, $autoload ) );
+	$suppress = $wpdb->suppress_errors();
+	$result = $wpdb->query( $wpdb->prepare( 'INSERT INTO %i (`option_name`, `option_value`, `autoload`) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE `option_name` = VALUES(`option_name`), `option_value` = VALUES(`option_value`), `autoload` = VALUES(`autoload`)', $wpdb->options, $option, $serialized_value, $autoload ) );
+	$wpdb->suppress_errors( $suppress );
 	if ( ! $result ) {
 		return false;
 	}
@@ -1020,11 +1022,13 @@ function delete_expired_transients( $force_db = false ) {
 
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE a, b FROM {$wpdb->options} a, {$wpdb->options} b
+			'DELETE a, b FROM %i a, %i b
 			WHERE a.option_name LIKE %s
 			AND a.option_name NOT LIKE %s
-			AND b.option_name = CONCAT( '_transient_timeout_', SUBSTRING( a.option_name, 12 ) )
-			AND b.option_value < %d",
+			AND b.option_name = CONCAT( "_transient_timeout_", SUBSTRING( a.option_name, 12 ) )
+			AND b.option_value < %d',
+			$wpdb->options,
+			$wpdb->options,
 			$wpdb->esc_like( '_transient_' ) . '%',
 			$wpdb->esc_like( '_transient_timeout_' ) . '%',
 			time()
@@ -1035,11 +1039,13 @@ function delete_expired_transients( $force_db = false ) {
 		// Single site stores site transients in the options table.
 		$wpdb->query(
 			$wpdb->prepare(
-				"DELETE a, b FROM {$wpdb->options} a, {$wpdb->options} b
+				'DELETE a, b FROM %i a, %i b
 				WHERE a.option_name LIKE %s
 				AND a.option_name NOT LIKE %s
-				AND b.option_name = CONCAT( '_site_transient_timeout_', SUBSTRING( a.option_name, 17 ) )
-				AND b.option_value < %d",
+				AND b.option_name = CONCAT( "_site_transient_timeout_", SUBSTRING( a.option_name, 17 ) )
+				AND b.option_value < %d',
+				$wpdb->options,
+				$wpdb->options,
 				$wpdb->esc_like( '_site_transient_' ) . '%',
 				$wpdb->esc_like( '_site_transient_timeout_' ) . '%',
 				time()
@@ -1049,11 +1055,13 @@ function delete_expired_transients( $force_db = false ) {
 		// Multisite stores site transients in the sitemeta table.
 		$wpdb->query(
 			$wpdb->prepare(
-				"DELETE a, b FROM {$wpdb->sitemeta} a, {$wpdb->sitemeta} b
+				'DELETE a, b FROM %i a, %i b
 				WHERE a.meta_key LIKE %s
 				AND a.meta_key NOT LIKE %s
-				AND b.meta_key = CONCAT( '_site_transient_timeout_', SUBSTRING( a.meta_key, 17 ) )
-				AND b.meta_value < %d",
+				AND b.meta_key = CONCAT( "_site_transient_timeout_", SUBSTRING( a.meta_key, 17 ) )
+				AND b.meta_value < %d',
+				$wpdb->sitemeta,
+				$wpdb->sitemeta,
 				$wpdb->esc_like( '_site_transient_' ) . '%',
 				$wpdb->esc_like( '_site_transient_timeout_' ) . '%',
 				time()

@@ -2383,7 +2383,7 @@ function get_users_of_blog( $id = '' ) {
 		$id = get_current_blog_id();
 	}
 	$blog_prefix = $wpdb->get_blog_prefix($id);
-	$users = $wpdb->get_results( "SELECT user_id, user_id AS ID, user_login, display_name, user_email, meta_value FROM $wpdb->users, $wpdb->usermeta WHERE {$wpdb->users}.ID = {$wpdb->usermeta}.user_id AND meta_key = '{$blog_prefix}capabilities' ORDER BY {$wpdb->usermeta}.user_id" );
+	$users = $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, user_id AS ID, user_login, display_name, user_email, meta_value FROM %i, %i WHERE %i.ID = %i.user_id AND meta_key = %s ORDER BY %i.user_id', $wpdb->users, $wpdb->usermeta, $wpdb->users, $wpdb->usermeta, $blog_prefix . 'capabilities', $wpdb->usermeta ) );
 	return $users;
 }
 

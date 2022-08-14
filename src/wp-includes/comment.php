@@ -657,7 +657,8 @@ function wp_allow_comment( $commentdata, $wp_error = false ) {
 	// Simple duplicate check.
 	// expected_slashed ($comment_post_ID, $comment_author, $comment_author_email, $comment_content)
 	$dupe = $wpdb->prepare(
-		"SELECT comment_ID FROM $wpdb->comments WHERE comment_post_ID = %d AND comment_parent = %s AND comment_approved != 'trash' AND ( comment_author = %s ",
+		'SELECT comment_ID FROM %i WHERE comment_post_ID = %d AND comment_parent = %s AND comment_approved != "trash" AND ( comment_author = %s',
+		$wpdb->comments,
 		wp_unslash( $commentdata['comment_post_ID'] ),
 		wp_unslash( $commentdata['comment_parent'] ),
 		wp_unslash( $commentdata['comment_author'] )
@@ -3311,7 +3312,7 @@ function _prime_comment_caches( $comment_ids, $update_meta_cache = true ) {
 
 	$non_cached_ids = _get_non_cached_ids( $comment_ids, 'comment' );
 	if ( ! empty( $non_cached_ids ) ) {
-		$fresh_comments = $wpdb->get_results( sprintf( "SELECT $wpdb->comments.* FROM $wpdb->comments WHERE comment_ID IN (%s)", implode( ',', array_map( 'intval', $non_cached_ids ) ) ) );
+		$fresh_comments = $wpdb->get_results( $wpdb->prepare( 'SELECT %i.* FROM %i WHERE ', $wpdb->comments, $wpdb->comments ) . sprintf( 'comment_ID IN (%s)', implode( ',', array_map( 'intval', $non_cached_ids ) ) ) );
 
 		update_comment_cache( $fresh_comments, $update_meta_cache );
 	}
@@ -3925,11 +3926,12 @@ function _wp_batch_update_comment_type() {
 	// Get the IDs of the comments to update.
 	$comment_ids = $wpdb->get_col(
 		$wpdb->prepare(
-			"SELECT comment_ID
-			FROM {$wpdb->comments}
-			WHERE comment_type = ''
+			'SELECT comment_ID
+			FROM %i
+			WHERE comment_type = ""
 			ORDER BY comment_ID DESC
-			LIMIT %d",
+			LIMIT %d',
+			$wpdb->comments,
 			$comment_batch_size
 		)
 	);
@@ -3939,7 +3941,7 @@ function _wp_batch_update_comment_type() {
 
 		// Update the `comment_type` field value to be `comment` for the next batch of comments.
 		$wpdb->query(
-			"UPDATE {$wpdb->comments}
+			'UPDATE ' . $wpdb->escape_identifier( $wpdb->comments ) . "
 			SET comment_type = 'comment'
 			WHERE comment_type = ''
 			AND comment_ID IN ({$comment_id_list})" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared

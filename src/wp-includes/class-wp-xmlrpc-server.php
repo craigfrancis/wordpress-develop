@@ -3241,19 +3241,20 @@ class wp_xmlrpc_server extends IXR_Server {
 		do_action( 'xmlrpc_call', 'wp.getPageList', $args, $this );
 
 		// Get list of page IDs and titles.
-		$page_list = $wpdb->get_results(
-			"
+		$page_list = $wpdb->get_results( $wpdb->prepare(
+			'
 			SELECT ID page_id,
 				post_title page_title,
 				post_parent page_parent_id,
 				post_date_gmt,
 				post_date,
 				post_status
-			FROM {$wpdb->posts}
-			WHERE post_type = 'page'
+			FROM %i
+			WHERE post_type = "page"
 			ORDER BY ID
-		"
-		);
+		',
+		$wpdb->posts
+		));
 
 		// The date needs to be formatted properly.
 		$num_pages = count( $page_list );
@@ -5675,7 +5676,7 @@ class wp_xmlrpc_server extends IXR_Server {
 		global $wpdb;
 
 		// Find any unattached files.
-		$attachments = $wpdb->get_results( "SELECT ID, guid FROM {$wpdb->posts} WHERE post_parent = '0' AND post_type = 'attachment'" );
+		$attachments = $wpdb->get_results( $wpdb->prepare( 'SELECT ID, guid FROM %i WHERE post_parent = "0" AND post_type = "attachment"', $wpdb->posts ) );
 		if ( is_array( $attachments ) ) {
 			foreach ( $attachments as $file ) {
 				if ( ! empty( $file->guid ) && strpos( $post_content, $file->guid ) !== false ) {

@@ -142,7 +142,7 @@ if ( ! function_exists( 'cache_users' ) ) :
 
 		$list = implode( ',', $clean );
 
-		$users = $wpdb->get_results( "SELECT * FROM $wpdb->users WHERE ID IN ($list)" );
+		$users = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i WHERE', $wpdb->users ) . " ID IN ($list)" );
 
 		foreach ( $users as $user ) {
 			update_user_caches( $user );

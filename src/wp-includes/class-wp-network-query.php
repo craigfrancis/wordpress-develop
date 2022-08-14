@@ -365,7 +365,7 @@ class WP_Network_Query {
 
 			$orderby = implode( ', ', $orderby_array );
 		} else {
-			$orderby = "$wpdb->site.id $order";
+			$orderby = $wpdb->escape_identifier( $wpdb->site ) . ".id $order";
 		}
 
 		$number = absint( $this->query_vars['number'] );
@@ -383,45 +383,45 @@ class WP_Network_Query {
 		if ( $this->query_vars['count'] ) {
 			$fields = 'COUNT(*)';
 		} else {
-			$fields = "$wpdb->site.id";
+			$fields = $wpdb->escape_identifier( $wpdb->site ) . '.id';
 		}
 
 		// Parse network IDs for an IN clause.
 		if ( ! empty( $this->query_vars['network__in'] ) ) {
-			$this->sql_clauses['where']['network__in'] = "$wpdb->site.id IN ( " . implode( ',', wp_parse_id_list( $this->query_vars['network__in'] ) ) . ' )';
+			$this->sql_clauses['where']['network__in'] = $wpdb->escape_identifier( $wpdb->site ) . '.id IN ( ' . implode( ',', wp_parse_id_list( $this->query_vars['network__in'] ) ) . ' )';
 		}
 
 		// Parse network IDs for a NOT IN clause.
 		if ( ! empty( $this->query_vars['network__not_in'] ) ) {
-			$this->sql_clauses['where']['network__not_in'] = "$wpdb->site.id NOT IN ( " . implode( ',', wp_parse_id_list( $this->query_vars['network__not_in'] ) ) . ' )';
+			$this->sql_clauses['where']['network__not_in'] = $wpdb->escape_identifier( $wpdb->site ) . '.id NOT IN ( ' . implode( ',', wp_parse_id_list( $this->query_vars['network__not_in'] ) ) . ' )';
 		}
 
 		if ( ! empty( $this->query_vars['domain'] ) ) {
-			$this->sql_clauses['where']['domain'] = $wpdb->prepare( "$wpdb->site.domain = %s", $this->query_vars['domain'] );
+			$this->sql_clauses['where']['domain'] = $wpdb->prepare( '%i.domain = %s', $wpdb->site, $this->query_vars['domain'] );
 		}
 
 		// Parse network domain for an IN clause.
 		if ( is_array( $this->query_vars['domain__in'] ) ) {
-			$this->sql_clauses['where']['domain__in'] = "$wpdb->site.domain IN ( '" . implode( "', '", $wpdb->_escape( $this->query_vars['domain__in'] ) ) . "' )";
+			$this->sql_clauses['where']['domain__in'] = $wpdb->escape_identifier( $wpdb->site ) . ".domain IN ( '" . implode( "', '", $wpdb->_escape( $this->query_vars['domain__in'] ) ) . "' )";
 		}
 
 		// Parse network domain for a NOT IN clause.
 		if ( is_array( $this->query_vars['domain__not_in'] ) ) {
-			$this->sql_clauses['where']['domain__not_in'] = "$wpdb->site.domain NOT IN ( '" . implode( "', '", $wpdb->_escape( $this->query_vars['domain__not_in'] ) ) . "' )";
+			$this->sql_clauses['where']['domain__not_in'] = $wpdb->escape_identifier( $wpdb->site ) . ".domain NOT IN ( '" . implode( "', '", $wpdb->_escape( $this->query_vars['domain__not_in'] ) ) . "' )";
 		}
 
 		if ( ! empty( $this->query_vars['path'] ) ) {
-			$this->sql_clauses['where']['path'] = $wpdb->prepare( "$wpdb->site.path = %s", $this->query_vars['path'] );
+			$this->sql_clauses['where']['path'] = $wpdb->prepare( '%i.path = %s', $wpdb->site, $this->query_vars['path'] );
 		}
 
 		// Parse network path for an IN clause.
 		if ( is_array( $this->query_vars['path__in'] ) ) {
-			$this->sql_clauses['where']['path__in'] = "$wpdb->site.path IN ( '" . implode( "', '", $wpdb->_escape( $this->query_vars['path__in'] ) ) . "' )";
+			$this->sql_clauses['where']['path__in'] = $wpdb->escape_identifier( $wpdb->site ) . ".path IN ( '" . implode( "', '", $wpdb->_escape( $this->query_vars['path__in'] ) ) . "' )";
 		}
 
 		// Parse network path for a NOT IN clause.
 		if ( is_array( $this->query_vars['path__not_in'] ) ) {
-			$this->sql_clauses['where']['path__not_in'] = "$wpdb->site.path NOT IN ( '" . implode( "', '", $wpdb->_escape( $this->query_vars['path__not_in'] ) ) . "' )";
+			$this->sql_clauses['where']['path__not_in'] = $wpdb->escape_identifier( $wpdb->site ) . ".path NOT IN ( '" . implode( "', '", $wpdb->_escape( $this->query_vars['path__not_in'] ) ) . "' )";
 		}
 
 		// Falsey search strings are ignored.
@@ -475,7 +475,7 @@ class WP_Network_Query {
 		}
 
 		$this->sql_clauses['select']  = "SELECT $found_rows $fields";
-		$this->sql_clauses['from']    = "FROM $wpdb->site $join";
+		$this->sql_clauses['from']    = 'FROM ' . $wpdb->escape_identifier( $wpdb->site ) . ' ' . $join;
 		$this->sql_clauses['groupby'] = $groupby;
 		$this->sql_clauses['orderby'] = $orderby;
 		$this->sql_clauses['limits']  = $limits;
@@ -570,12 +570,12 @@ class WP_Network_Query {
 		$parsed = false;
 		if ( 'network__in' === $orderby ) {
 			$network__in = implode( ',', array_map( 'absint', $this->query_vars['network__in'] ) );
-			$parsed      = "FIELD( {$wpdb->site}.id, $network__in )";
+			$parsed      = 'FIELD( ' . $wpdb->escape_identifier( $wpdb->site ) . ".id, $network__in )";
 		} elseif ( 'domain_length' === $orderby || 'path_length' === $orderby ) {
 			$field  = substr( $orderby, 0, -7 );
-			$parsed = "CHAR_LENGTH($wpdb->site.$field)";
+			$parsed = 'CHAR_LENGTH(' . $wpdb->escape_identifier( $wpdb->site ) . ".$field)";
 		} elseif ( in_array( $orderby, $allowed_keys, true ) ) {
-			$parsed = "$wpdb->site.$orderby";
+			$parsed = $wpdb->escape_identifier( $wpdb->site ) . '.' . $orderby;
 		}
 
 		return $parsed;

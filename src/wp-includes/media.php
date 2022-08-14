@@ -4545,10 +4545,11 @@ function wp_enqueue_media( $args = array() ) {
 			$wpdb->prepare(
 				"
 			SELECT DISTINCT YEAR( post_date ) AS year, MONTH( post_date ) AS month
-			FROM $wpdb->posts
+			FROM %i
 			WHERE post_type = %s
 			ORDER BY post_date DESC
 		",
+				$wpdb->posts,
 				'attachment'
 			)
 		);
